@@ -1,5 +1,6 @@
 #include "lbm.h"
 #include <SDL2/SDL.h>
+#include <stdio.h>
 
 /*
 The general operational steps:
@@ -28,7 +29,7 @@ const vec2 direction[9] = {
     {-1.0, 1.0}, {-1.0, -1.0}, {1.0, -1.0}
 };
 
-const double c_s = 1/sqrt(3); // lattice speed of sound
+const double c_s = 1/1.73205080757; // lattice speed of sound = 1/sqrt(3)
 
 double tau; // note: this is ideally calculated in terms of the initial (physical, SI) values, i.e. viscosity
 double dx;
@@ -56,7 +57,7 @@ void grid_initialize(gridpoint** grid) {
     }
 }
 
-void step_grid(gridpoint** grid, gridpoint** swap_grid) {
+void grid_step(gridpoint** grid, gridpoint** swap_grid) {
     float f_eq[9];
     for(int i = 0; i < Nx; i++) {
         for(int j = 0; j < Ny; j++) {
@@ -106,6 +107,58 @@ void step_grid(gridpoint** grid, gridpoint** swap_grid) {
     }
 }
 
+void grid_draw(gridpoint** grid, unsigned int variable_type, char color_style) {
+
+    /* Outline of style variables:
+        color_style:
+            'r' = red-variable theme
+            'g' = green-variable theme
+            'b' = blue-variable theme (default for other variables)
+            'h' = high-resolution theme (need to figure this out, will vary over several colors)
+        variable_type:
+            0 = LB-Density (default for variable_type > 5)
+            1 = LB-Velocity
+            2 = LB-Pressure
+            3 = SI-Density
+            4 = SI-Velocity
+            5 = SI-Pressure
+    */
+    double max, min;
+    unsigned int rgb_max, rgb_min;
+    unsigned int screen_width, screen_height;
+
+    // temp stuff for testing:
+    screen_width = 800;
+    screen_height = 800;
+
+    if(variable_type == 0) {
+
+    }
+    SDL_Event event;
+    SDL_Renderer *renderer;
+    SDL_Window *window;
+    SDL_Init(SDL_INIT_VIDEO);
+    SDL_CreateWindowAndRenderer(screen_width, screen_height, 0, &window, &renderer);
+    SDL_RenderClear(renderer);
+    for(int i = 0; i < screen_width; i++) {
+        for(int j = 0; j < screen_height; j++) {
+            SDL_SetRenderDrawColor(renderer, 0, 0, j, 100);
+            SDL_RenderDrawPoint(renderer, i, j);            /// this is the problem, i don't have this set up yet to track pts --> pixels
+                                                            /// also note: SDL is (0,0) at top-left, but LBM is defined (0,0) at bottom-left
+        }
+        SDL_RenderPresent(renderer);
+        while(1) {
+            if (SDL_PollEvent(&event) && event.type == SDL_QUIT) {
+                break;
+            }
+        }
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+    }
+}
+
+
 void main() {
     Nx = 5;
     Ny = 5;
@@ -116,8 +169,11 @@ void main() {
         grid[i] = malloc(Ny * sizeof(gridpoint));
         grid_copy[i] = malloc(Ny * sizeof(gridpoint));
     }
-}
 
+    grid_initialize(grid);
+    grid_step(grid, grid_copy);
+    grid_draw(grid, 0, 'b');
+}
 
 /*
 
