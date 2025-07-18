@@ -131,31 +131,29 @@ void grid_draw(gridpoint** grid, unsigned int variable_type, char color_style) {
     screen_width = 800;
     screen_height = 800;
 
-    if(variable_type == 0) {
-
-    }
     SDL_Event event;
     SDL_Renderer *renderer;
     SDL_Window *window;
+
     SDL_Init(SDL_INIT_VIDEO);
     SDL_CreateWindowAndRenderer(screen_width, screen_height, 0, &window, &renderer);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
     for(int i = 0; i < screen_width; i++) {
         for(int j = 0; j < screen_height; j++) {
-            SDL_SetRenderDrawColor(renderer, 0, 0, j, 100);
-            SDL_RenderDrawPoint(renderer, i, j);            /// this is the problem, i don't have this set up yet to track pts --> pixels
-                                                            /// also note: SDL is (0,0) at top-left, but LBM is defined (0,0) at bottom-left
+            SDL_SetRenderDrawColor(renderer, 0, 0, i/4, 255);
+            SDL_RenderDrawPoint(renderer, i, j);
         }
-        SDL_RenderPresent(renderer);
-        while(1) {
-            if (SDL_PollEvent(&event) && event.type == SDL_QUIT) {
-                break;
-            }
-        }
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
     }
+    SDL_RenderPresent(renderer);
+    while (1) {
+        if (SDL_PollEvent(&event) && event.type == SDL_QUIT) {
+            break;
+        }
+    }
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 }
 
 
