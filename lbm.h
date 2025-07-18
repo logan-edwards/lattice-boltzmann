@@ -10,3 +10,10 @@ typedef struct gridpoint {
 	double f[9];
 	int has_boundary_condition;	// might be unnecessary, handling can occur in func loop
 } gridpoint;
+
+typedef struct color {
+	unsigned int r;
+	unsigned int g;
+	unsigned int b;
+	unsigned int alpha;
+} color;

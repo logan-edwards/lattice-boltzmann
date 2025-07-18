@@ -43,7 +43,6 @@ double dotprod2(vec2 u, vec2 v) {
     return sum;
 }
 
-
 void grid_initialize(gridpoint** grid) {
     // perchance do step 0 up here as well
     for(int i = 0; i < Nx; i++) {
@@ -111,10 +110,8 @@ void grid_draw(gridpoint** grid, unsigned int variable_type, char color_style) {
 
     /* Outline of style variables:
         color_style:
-            'r' = red-variable theme
-            'g' = green-variable theme
-            'b' = blue-variable theme (default for other variables)
-            'h' = high-resolution theme (need to figure this out, will vary over several colors)
+            'm' = monochrome, blue/black theme
+            'h' = high-resolution theme
         variable_type:
             0 = LB-Density (default for variable_type > 5)
             1 = LB-Velocity
@@ -123,13 +120,45 @@ void grid_draw(gridpoint** grid, unsigned int variable_type, char color_style) {
             4 = SI-Velocity
             5 = SI-Pressure
     */
-    double max, min;
-    unsigned int rgb_max, rgb_min;
-    unsigned int screen_width, screen_height;
+    
+    // using 0-5, assign the appropriate value to val_max, val_min
+    // compute max, min, slope, etc based on these arbitrary values
+    // then run the algorithm 
+    double max_val, min_val;
 
-    // temp stuff for testing:
-    screen_width = 800;
-    screen_height = 800;
+    // values are temporarily fixed for testing:
+    int screen_width = 800;
+    int screen_height = 800;
+
+    // right now, we just do this with density:
+    max_val = grid[0][0].density;
+    min_val = max_val;
+    for(int i = 0; i < Nx; i++) {
+        for(int j = 0; j < Ny; j++) {
+            if(grid[i][j].density > max_val) max_val = grid[i][j].density;
+            if(grid[i][j].density < min_val) min_val = grid[i][j].density;
+        }
+    }
+
+    // initialize color grid:
+    color** color_grid = malloc(screen_width * sizeof(color*));
+    for(int i = 0; i < screen_width; i++) {
+        color_grid[i] = malloc(screen_height * sizeof(color));
+    }
+    int x, y; // x,y value on original grid
+
+    for(int i = 0; i < screen_width; i++) {
+        for(int j = 0; j < screen_height; j++) {
+            x = (double)((Nx/screen_width) * i);
+            y = -(double)((Ny/screen_height) * j) + screen_height;
+            color_grid[i][j].r = 0;
+            color_grid[i][j].g = 0;
+            printf("Accessing (%d,%d)\n", x,y); // why is this constant?????
+            color_grid[i][j].b = (255-0)/(max_val - min_val) * grid[x][y].density;
+            color_grid[i][j].alpha = 255;
+        }
+    }
+
 
     SDL_Event event;
     SDL_Renderer *renderer;
@@ -141,7 +170,7 @@ void grid_draw(gridpoint** grid, unsigned int variable_type, char color_style) {
     SDL_RenderClear(renderer);
     for(int i = 0; i < screen_width; i++) {
         for(int j = 0; j < screen_height; j++) {
-            SDL_SetRenderDrawColor(renderer, 0, 0, i/4, 255);
+            SDL_SetRenderDrawColor(renderer, color_grid[i][j].r, color_grid[i][j].g, color_grid[i][j].b, color_grid[i][j].alpha);
             SDL_RenderDrawPoint(renderer, i, j);
         }
     }
@@ -154,12 +183,13 @@ void grid_draw(gridpoint** grid, unsigned int variable_type, char color_style) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+
 }
 
 
 void main() {
-    Nx = 5;
-    Ny = 5;
+    Nx = 400;
+    Ny = 400;
 
     gridpoint** grid = malloc(Nx * sizeof(gridpoint*));
     gridpoint** grid_copy = malloc(Nx * sizeof(gridpoint*));
@@ -171,6 +201,13 @@ void main() {
     grid_initialize(grid);
     grid_step(grid, grid_copy);
     grid_draw(grid, 0, 'b');
+
+    for(int i = 0; i < Nx; i++) {
+        free(grid[i]);
+        free(grid_copy[i]);
+    }
+    free(grid);
+    free(grid_copy);
 }
 
 /*
