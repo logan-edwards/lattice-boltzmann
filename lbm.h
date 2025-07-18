@@ -4,9 +4,9 @@ typedef struct vec2 {
 } vec2;
 
 typedef struct gridpoint {
-	double weight[9];
 	vec2 coordinate;
-	double density;
 	vec2 velocity;
-	int boundary_condition;
+	double density;
+	double f[9];
+	int has_boundary_condition;	// might be unnecessary, handling can occur in func loop
 } gridpoint;
