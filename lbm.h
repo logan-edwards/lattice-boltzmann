@@ -1,3 +1,9 @@
+#include <SDL2/SDL.h>
+#include <stdio.h>
+
+#ifndef LBM_HEADER
+#define LBM_HEADER
+
 typedef struct vec2 {
 	double x;
 	double y;
@@ -17,3 +23,10 @@ typedef struct color {
 	unsigned int b;
 	unsigned int alpha;
 } color;
+
+void grid_initialize(gridpoint** grid);
+void grid_step(gridpoint** grid, gridpoint** swap_grid);
+void grid_step(gridpoint** grid, gridpoint** swap_grid);
+double dotprod2(vec2 u, vec2 v);
+
+#endif
