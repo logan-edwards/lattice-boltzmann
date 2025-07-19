@@ -50,7 +50,7 @@ void grid_initialize(gridpoint** grid) {
             grid[i][j].coordinate.y = j * dy;
             for(int k = 0; k < 9; k++) {
                 //grid[i][j].f[k] = weight[k]; // In reality, this is mathematically f_i = w_i*rho_i for an initial rho. For unit density, f_i = w_i
-                grid[i][j].f[k] = j*weight[k]; // TEST WEIGHTS FOR NONUNIT DENSITY ON FIRST STEP
+                grid[i][j].f[k] = (i+j)*weight[k]; // TEST WEIGHTS FOR NONUNIT DENSITY ON FIRST STEP
             }
         }
     }
@@ -139,8 +139,6 @@ void grid_draw(gridpoint** grid, unsigned int variable_type, char style) {
             if(grid[i][j].density < min_val) min_val = grid[i][j].density;
         }
     }
-    printf("Min = %f\n Max = %f\n", min_val, max_val);
-
 
     // initialize color grid:
     color** color_grid = malloc(screen_width * sizeof(color*));
@@ -148,19 +146,16 @@ void grid_draw(gridpoint** grid, unsigned int variable_type, char style) {
         color_grid[i] = malloc(screen_height * sizeof(color));
     }
     int x, y; // x,y value on original grid
-
     for(int i = 0; i < screen_width; i++) {
         for(int j = 0; j < screen_height; j++) {
-            x = (double)Nx / screen_width * i;
-            y = -1*(double)Ny / screen_height * j + screen_height;
+            x = (double)i * Nx / screen_width;
+            y = -1.0 * j * Ny / screen_height + Ny;
             color_grid[i][j].r = 0;
             color_grid[i][j].g = 0;
-            color_grid[i][j].b = (int)(grid[x][y].density * 255.0 / 399.0);
+            color_grid[i][j].b = grid[x][y].density * 255 / (max_val - min_val); // interpolation works, but grid[x][y].density is not returning proper values 
             color_grid[i][j].alpha = 255;
         }
     }
-
-
     SDL_Event event;
     SDL_Renderer *renderer;
     SDL_Window *window;
@@ -202,7 +197,7 @@ void main() {
 
     grid_initialize(grid);
     grid_step(grid, grid_copy);
-    grid_draw(grid_copy, 0, 'b');
+    grid_draw(grid, 0, 'b');
 
     for(int i = 0; i < Nx; i++) {
         free(grid[i]);
