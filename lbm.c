@@ -1,4 +1,5 @@
 #include "lbm.h"
+#include <stdio.h>
 
 /*
 The general operational steps:
@@ -41,7 +42,6 @@ double dotprod2(vec2 u, vec2 v) {
     return sum;
 }
 
-// When the coloring part works, remove test weights form this function
 void grid_initialize(gridpoint** grid) {
     // perchance do step 0 up here as well
     for(int i = 0; i < Nx; i++) {
@@ -49,8 +49,7 @@ void grid_initialize(gridpoint** grid) {
             grid[i][j].coordinate.x = i * dx;
             grid[i][j].coordinate.y = j * dy;
             for(int k = 0; k < 9; k++) {
-                //grid[i][j].f[k] = weight[k]; // In reality, this is mathematically f_i = w_i*rho_i for an initial rho. For unit density, f_i = w_i
-                grid[i][j].f[k] = (i+j)*weight[k]; // TEST WEIGHTS FOR NONUNIT DENSITY ON FIRST STEP
+                grid[i][j].f[k] = weight[k]; // In reality, this is mathematically f_i = w_i*rho_i for an initial rho. For unit density, f_i = w_i
             }
         }
     }
@@ -106,29 +105,17 @@ void grid_step(gridpoint** grid, gridpoint** swap_grid) {
     }
 }
 
-void grid_draw(gridpoint** grid, unsigned int variable_type, char style) {
-
-    /* Outline of style variables:
-        color_style:
-            'm' = monochrome, blue/black theme
-            'h' = high-resolution theme
-        variable_type:
-            0 = LB-Density (default for variable_type > 5)
-            1 = LB-Velocity
-            2 = LB-Pressure
-            3 = SI-Density
-            4 = SI-Velocity
-            5 = SI-Pressure
+void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_height, int var_type) {
+    /* var_type index:
+        1 = LB Density
+        2 = LB Velocity
+        3 = LB Pressure (using R-B visualizer, R if <0 and B if >0)
+        4 = SI Density
+        5 = SI Velocity
+        6 = SI Pressure (using R-B visualizer, R if <0 and B if >0)
     */
-    
-    // using 0-5, assign the appropriate value to val_max, val_min
-    // compute max, min, slope, etc based on these arbitrary values
-    // then run the algorithm 
     double max_val, min_val;
-
-    // values are temporarily fixed for testing:
-    int screen_width = 800;
-    int screen_height = 800;
+    int x, y; // x,y value on original grid
 
     // right now, we just do this with density:
     max_val = grid[0][0].density;
@@ -145,7 +132,6 @@ void grid_draw(gridpoint** grid, unsigned int variable_type, char style) {
     for(int i = 0; i < screen_width; i++) {
         color_grid[i] = malloc(screen_height * sizeof(color));
     }
-    int x, y; // x,y value on original grid
     for(int i = 0; i < screen_width; i++) {
         for(int j = 0; j < screen_height; j++) {
             x = (double)i * Nx / screen_width;
@@ -181,12 +167,29 @@ void grid_draw(gridpoint** grid, unsigned int variable_type, char style) {
 
 }
 
-void main() {
+/* TO-DO: read a config file from main containing:
+    - Time of Simulation
+    - Viscosity
+    - Length
+    - Height
+    - Top Wall BC
+    - Right Wall BC
+    - Left Wall BC
+    - Bottom Wall BC
+
+*/
+int main(int argc, double** argv) {
+    double viscocity;
+    double time;
+    double length;
+    double height;
+    // things to be read by config file:
     Nx = 40;
     Ny = 40;
-
-    dx = 0.1;
-    dy = dx;
+    viscocity = 1;
+    time = 100;
+    length = 1;
+    height = 1;
 
     gridpoint** grid = malloc(Nx * sizeof(gridpoint*));
     gridpoint** grid_copy = malloc(Nx * sizeof(gridpoint*));
@@ -197,7 +200,7 @@ void main() {
 
     grid_initialize(grid);
     grid_step(grid, grid_copy);
-    grid_draw(grid, 0, 'b');
+    grid_draw(grid, 1000, 800, 1);
 
     for(int i = 0; i < Nx; i++) {
         free(grid[i]);
@@ -206,34 +209,3 @@ void main() {
     free(grid);
     free(grid_copy);
 }
-
-/*
-
-// SDL example main function:
-
-int main(void) {
-    SDL_Event event;
-    SDL_Renderer *renderer;
-    SDL_Window *window;
-    int i;
-
-    int windowwidth = 800;
-
-    SDL_Init(SDL_INIT_VIDEO);
-    SDL_CreateWindowAndRenderer(windowwidth, windowwidth, 0, &window, &renderer);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    for (i = 0; i < windowwidth; ++i)
-        SDL_RenderDrawPoint(renderer, i, i);
-    SDL_RenderPresent(renderer);
-    while (1) {
-        if (SDL_PollEvent(&event) && event.type == SDL_QUIT)
-            break;
-    }
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-    return EXIT_SUCCESS;
-}
-*/

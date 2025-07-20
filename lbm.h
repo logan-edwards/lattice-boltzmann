@@ -26,7 +26,7 @@ typedef struct color {
 
 void grid_initialize(gridpoint** grid);
 void grid_step(gridpoint** grid, gridpoint** swap_grid);
-void grid_step(gridpoint** grid, gridpoint** swap_grid);
+void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_height, int var_type);
 double dotprod2(vec2 u, vec2 v);
 
 #endif
