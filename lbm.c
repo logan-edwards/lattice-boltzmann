@@ -28,6 +28,11 @@ const vec2 direction[9] = {
     {-1.0, 1.0}, {-1.0, -1.0}, {1.0, -1.0}
 };
 
+boundary* right_wall;
+boundary* left_wall;
+boundary* top_wall;
+boundary* bottom_wall;
+
 const double c_s = 1/1.73205080757; // lattice speed of sound = 1/sqrt(3)
 
 double tau; // note: this is ideally calculated in terms of the initial (physical, SI) values, i.e. viscosity
@@ -176,20 +181,18 @@ void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_
     - Right Wall BC
     - Left Wall BC
     - Bottom Wall BC
-
 */
 int main(int argc, double** argv) {
-    double viscocity;
-    double time;
     double length;
     double height;
     // things to be read by config file:
     Nx = 40;
     Ny = 40;
-    viscocity = 1;
-    time = 100;
     length = 1;
     height = 1;
+
+    dx = length / (Nx - 1);
+    dy = height / (Ny - 1);
 
     gridpoint** grid = malloc(Nx * sizeof(gridpoint*));
     gridpoint** grid_copy = malloc(Nx * sizeof(gridpoint*));
@@ -199,6 +202,51 @@ int main(int argc, double** argv) {
     }
 
     grid_initialize(grid);
+    
+    // here is boundary condition assignment. this stuff could be wrapped into a function
+    // and then the actual functions here wrapped into a single file with function definitions
+    // leaving all this specific stuff to be written for each individual scenario
+
+    right_wall = malloc(Ny*sizeof(boundary));
+    left_wall = malloc(Ny*sizeof(boundary));
+    top_wall = malloc(Nx*sizeof(boundary));
+    bottom_wall = malloc(Nx*sizeof(boundary));
+
+
+    /* This setup is for lid-driven cavity flow*/
+
+    double lid_velocity = 1;            // change this
+
+    for(int y = 0; y < Ny; y++) {
+        right_wall[y].coordinate.x = length;
+        right_wall[y].coordinate.y = dy*y;
+        right_wall[y].condition = 0;
+        right_wall[y].velocity.x = 0;
+        right_wall[y].velocity.y = 0;
+
+        left_wall[y].coordinate.x = 0;
+        left_wall[y].coordinate.y = dy*y;
+        left_wall[y].condition = 0;
+        left_wall[y].velocity.x = 0;
+        left_wall[y].velocity.y = 0;
+    }
+    for(int x = 0; x < Nx; x++) {
+        top_wall[x].coordinate.x=dx*x;
+        top_wall[x].coordinate.y=height;
+        top_wall[x].condition = 1;
+        top_wall[x].velocity.x = lid_velocity;
+        top_wall[x].velocity.y = 0;
+
+        bottom_wall[x].coordinate.x=dx*x;
+        bottom_wall[x].coordinate.y=0;
+        bottom_wall[x].condition = 0;
+        bottom_wall[x].velocity.x = 0;
+        bottom_wall[x].velocity.y = 0;
+    }
+
+
+
+
     grid_step(grid, grid_copy);
     grid_draw(grid, 1000, 800, 1);
 
@@ -206,6 +254,12 @@ int main(int argc, double** argv) {
         free(grid[i]);
         free(grid_copy[i]);
     }
+
+    free(right_wall);
+    free(left_wall);
+    free(top_wall);
+    free(bottom_wall);
+
     free(grid);
     free(grid_copy);
 }

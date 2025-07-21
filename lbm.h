@@ -14,8 +14,13 @@ typedef struct gridpoint {
 	vec2 velocity;
 	double density;
 	double f[9];
-	int has_boundary_condition;	// might be unnecessary, handling can occur in func loop
 } gridpoint;
+
+typedef struct boundary {
+	int condition;
+	vec2 coordinate;
+	vec2 velocity;
+} boundary;
 
 typedef struct color {
 	unsigned int r;
@@ -23,6 +28,15 @@ typedef struct color {
 	unsigned int b;
 	unsigned int alpha;
 } color;
+
+/*
+TO-DO with BCs:
+	Generalized Bounce-Back. For fixed wall, v=0 and this is a no-slip condition
+	For wall with v = [vx, vy] this can function as a velocity inlet
+
+	Zero-Gradient Boundary. This is an "open boundary", i.e. a pressure outlet.
+
+*/
 
 void grid_initialize(gridpoint** grid);
 void grid_step(gridpoint** grid, gridpoint** swap_grid);
