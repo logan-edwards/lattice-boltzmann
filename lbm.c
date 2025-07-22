@@ -57,9 +57,9 @@ double dotprod2(vec2 u, vec2 v) {
 }
 
 void grid_initialize(gridpoint** grid) {
-    // perchance do step 0 up here as well
-    reynolds_number = SI_velocity * ((SI_length + SI_height) / 2) / SI_viscosity;
-    tau = 0.5 + LB_viscosity / (c_s * c_s);
+    //reynolds_number = SI_velocity * ((SI_length + SI_height) / 2) / SI_viscosity;
+    //tau = 0.5 + LB_viscosity / (c_s * c_s);
+    tau = 0.55;
 
     for(int i = 0; i < Nx; i++) {
         for(int j = 0; j < Ny; j++) {
@@ -107,16 +107,21 @@ void grid_step(gridpoint** grid, gridpoint** swap_grid, void (*apply_boundary_co
             for(int k = 0; k < 9; k++) {
                 swap_grid[i][j].f[k] = grid[i][j].f[k] - (1/tau) * (grid[i][j].f[k] - f_eq[k]);
             }
-
-            /* Apply BCs according to specifics determined by input function */
-            apply_boundary_conditions(grid);
-
-            /* Streaming Step */
-            for(int k = 0; k < 9; k++) {
-                grid[i][j].f[k] = swap_grid[i][j].f[k];
-            }
         }
     }
+        /* Apply BCs according to specifics determined by input function */
+        apply_boundary_conditions(swap_grid);
+
+        /* Streaming Step */
+        for(int i = 0; i < Nx; i++) {
+            for(int j = 0; j < Ny; j++) {
+                for(int k = 0; k < 9; k++) {
+                    if(i + direction[k].x >= 0 && i + direction[k].x < Nx && j + direction[k].y >= 0 && j + direction[k].y < Ny) {
+                        grid[(int)(i+direction[k].x)][(int)(j+direction[k].y)].f[k] = swap_grid[i][j].f[k];
+                    }
+                }
+            }
+        }
 }
 
 void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_height, int var_type) {
@@ -124,9 +129,6 @@ void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_
         1 = LB Density
         2 = LB Velocity
         3 = LB Pressure (using R-B visualizer, R if <0 and B if >0)
-        4 = SI Density
-        5 = SI Velocity
-        6 = SI Pressure (using R-B visualizer, R if <0 and B if >0)
     */
     double max_val, min_val;
     int x, y; // x,y value on original grid
@@ -140,7 +142,7 @@ void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_
             if(grid[i][j].density < min_val) min_val = grid[i][j].density;
         }
     }
-
+    printf("Minimum density = %f\n Maximum density = %f", min_val, max_val);
     // initialize color grid:
     color** color_grid = malloc(screen_width * sizeof(color*));
     for(int i = 0; i < screen_width; i++) {
@@ -180,21 +182,45 @@ void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_
     SDL_Quit();
 }
 
-void demo_function(gridpoint** grid) {
-	for(int i = 0; i < Ny; i++) {
-		grid[0][i].density = 0;
-		grid[Nx-1][i].density = 4;
-	}
+void demo_lid_driven_cavity_flow(gridpoint** grid) {
+
+        // Velocity condition
+    double rho_approx;
+    double u_fixed = 0.1;
+    for(int x = 0; x < Nx; x++) {
+        rho_approx = grid[x][Ny-1].f[0] + grid[x][Ny-1].f[1] + grid[x][Ny-1].f[3] + 2 * (grid[x][Ny-1].f[2] + grid[x][Ny-1].f[5] + grid[x][Ny-1].f[6]);
+        grid[x][Ny-1].f[4] = grid[x][Ny-1].f[2];
+        grid[x][Ny-1].f[7] = grid[x][Ny-1].f[5] + 0.5 * (grid[x][Ny-1].f[3] - grid[x][Ny-1].f[1]) + (1.0 / 6.0) * rho_approx * u_fixed;
+        grid[x][Ny-1].f[8] = grid[x][Ny-1].f[6] + 0.5 * (grid[x][Ny-1].f[1] - grid[x][Ny-1].f[3]) + (1.0 / 6.0) * rho_approx * u_fixed;
+    }
+
+    // Bounce-Back on bottom wall
+    for(int x = 0; x < Nx; x++) {
+        grid[x][0].f[2] = grid[x][0].f[4];
+        grid[x][0].f[5] = grid[x][0].f[7];
+        grid[x][0].f[6] = grid[x][0].f[8];
+    }
+
+    // Bounce-back on side walls
+    for(int y = 0; y < Ny; y++) {
+        grid[0][y].f[1] = grid[0][y].f[3];
+        grid[0][y].f[5] = grid[0][y].f[7];
+        grid[0][y].f[8] = grid[0][y].f[6];
+
+        grid[Nx-1][y].f[3] = grid[Nx-1][y].f[1];
+        grid[Nx-1][y].f[7] = grid[Nx-1][y].f[5];
+        grid[Nx-1][y].f[6] = grid[Nx-1][y].f[8];
+    }
 }
 
 int main(int argc, double** argv) {
     double length;
     double height;
     // things to be read by config file:
-    Nx = 400;
-    Ny = 400;
-    length = 1;
-    height = 1;
+    Nx = 80;
+    Ny = 80;
+    length = 0.1;
+    height = 0.1;
 
     dx = length / (Nx - 1);
     dy = height / (Ny - 1);
@@ -207,14 +233,13 @@ int main(int argc, double** argv) {
     }
 
     grid_initialize(grid);
-
-
-    /* This setup is for lid-driven cavity flow*/
-
-    double lid_velocity = 1;            // change this
-
-    for(int i = 0; i < 100; i++) grid_step(grid, grid_copy, demo_function);
-    grid_draw(grid, 1000, 800, 1);
+    printf("*** Grid initialized ***\n");
+    for(int i = 0; i < 10; i++) {
+        printf("Step %d . . .", i);
+        grid_step(grid, grid_copy, *demo_lid_driven_cavity_flow);
+        printf(" Done!\n");
+    }
+    grid_draw(grid, 800, 800, 1);
 
 
     for(int i = 0; i < Nx; i++) {
