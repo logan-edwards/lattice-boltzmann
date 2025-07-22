@@ -1,5 +1,6 @@
 #include "lbm.h"
-#include <stdio.h>
+#include <SDL2/SDL.h>
+
 
 /*
 The general operational steps:
@@ -19,8 +20,6 @@ const double weight[9] = {4.0/9.0,
     1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 
     1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0
 };
-const double e_x[9] = {0.0, 1.0, 0.0, -1.0, 0.0, 1.0, -1.0, -1.0, 1.0};
-const double e_y[9] = {0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 1.0, -1.0, -1.0};
 
 const vec2 direction[9] = {
     {0.0,0.0}, {1.0, 0.0}, {0.0, 1.0},
@@ -28,18 +27,28 @@ const vec2 direction[9] = {
     {-1.0, 1.0}, {-1.0, -1.0}, {1.0, -1.0}
 };
 
-boundary* right_wall;
-boundary* left_wall;
-boundary* top_wall;
-boundary* bottom_wall;
-
 const double c_s = 1/1.73205080757; // lattice speed of sound = 1/sqrt(3)
+double tau;
 
-double tau; // note: this is ideally calculated in terms of the initial (physical, SI) values, i.e. viscosity
 double dx;
 double dy;
 unsigned int Nx;
 unsigned int Ny;
+
+double SI_velocity;
+double SI_length;
+double SI_height;
+double SI_viscosity;
+
+double LB_velocity;
+double LB_length;
+double LB_height;
+double LB_viscosity;
+
+double reynolds_number;
+double mach_number;
+
+
 
 double dotprod2(vec2 u, vec2 v) {
     double sum;
@@ -49,6 +58,9 @@ double dotprod2(vec2 u, vec2 v) {
 
 void grid_initialize(gridpoint** grid) {
     // perchance do step 0 up here as well
+    reynolds_number = SI_velocity * ((SI_length + SI_height) / 2) / SI_viscosity;
+    tau = 0.5 + LB_viscosity / (c_s * c_s);
+
     for(int i = 0; i < Nx; i++) {
         for(int j = 0; j < Ny; j++) {
             grid[i][j].coordinate.x = i * dx;
@@ -60,7 +72,7 @@ void grid_initialize(gridpoint** grid) {
     }
 }
 
-void grid_step(gridpoint** grid, gridpoint** swap_grid) {
+void grid_step(gridpoint** grid, gridpoint** swap_grid, void (*apply_boundary_conditions)(gridpoint**)) {
     float f_eq[9];
     for(int i = 0; i < Nx; i++) {
         for(int j = 0; j < Ny; j++) {
@@ -75,8 +87,8 @@ void grid_step(gridpoint** grid, gridpoint** swap_grid) {
             grid[i][j].velocity.x = 0;
             grid[i][j].velocity.y = 0;
             for(int k = 0; k < 9; k++) {
-                grid[i][j].velocity.x = grid[i][j].velocity.x + e_x[k]*grid[i][j].f[k];
-                grid[i][j].velocity.y = grid[i][j].velocity.y + e_y[k]*grid[i][j].f[k];
+                grid[i][j].velocity.x = grid[i][j].velocity.x + direction[k].x*grid[i][j].f[k];
+                grid[i][j].velocity.y = grid[i][j].velocity.y + direction[k].y*grid[i][j].f[k];
             }
             grid[i][j].velocity.x /= grid[i][j].density;
             grid[i][j].velocity.y /= grid[i][j].density;
@@ -96,11 +108,8 @@ void grid_step(gridpoint** grid, gridpoint** swap_grid) {
                 swap_grid[i][j].f[k] = grid[i][j].f[k] - (1/tau) * (grid[i][j].f[k] - f_eq[k]);
             }
 
-            /* 
-            
-            HANDLE BOUNDARY CONDITIONS HERE
-            
-            */
+            /* Apply BCs according to specifics determined by input function */
+            apply_boundary_conditions(grid);
 
             /* Streaming Step */
             for(int k = 0; k < 9; k++) {
@@ -169,25 +178,21 @@ void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-
 }
 
-/* TO-DO: read a config file from main containing:
-    - Time of Simulation
-    - Viscosity
-    - Length
-    - Height
-    - Top Wall BC
-    - Right Wall BC
-    - Left Wall BC
-    - Bottom Wall BC
-*/
+void demo_function(gridpoint** grid) {
+	for(int i = 0; i < Ny; i++) {
+		grid[0][i].density = 0;
+		grid[Nx-1][i].density = 4;
+	}
+}
+
 int main(int argc, double** argv) {
     double length;
     double height;
     // things to be read by config file:
-    Nx = 40;
-    Ny = 40;
+    Nx = 400;
+    Ny = 400;
     length = 1;
     height = 1;
 
@@ -202,64 +207,23 @@ int main(int argc, double** argv) {
     }
 
     grid_initialize(grid);
-    
-    // here is boundary condition assignment. this stuff could be wrapped into a function
-    // and then the actual functions here wrapped into a single file with function definitions
-    // leaving all this specific stuff to be written for each individual scenario
-
-    right_wall = malloc(Ny*sizeof(boundary));
-    left_wall = malloc(Ny*sizeof(boundary));
-    top_wall = malloc(Nx*sizeof(boundary));
-    bottom_wall = malloc(Nx*sizeof(boundary));
 
 
     /* This setup is for lid-driven cavity flow*/
 
     double lid_velocity = 1;            // change this
 
-    for(int y = 0; y < Ny; y++) {
-        right_wall[y].coordinate.x = length;
-        right_wall[y].coordinate.y = dy*y;
-        right_wall[y].condition = 0;
-        right_wall[y].velocity.x = 0;
-        right_wall[y].velocity.y = 0;
-
-        left_wall[y].coordinate.x = 0;
-        left_wall[y].coordinate.y = dy*y;
-        left_wall[y].condition = 0;
-        left_wall[y].velocity.x = 0;
-        left_wall[y].velocity.y = 0;
-    }
-    for(int x = 0; x < Nx; x++) {
-        top_wall[x].coordinate.x=dx*x;
-        top_wall[x].coordinate.y=height;
-        top_wall[x].condition = 1;
-        top_wall[x].velocity.x = lid_velocity;
-        top_wall[x].velocity.y = 0;
-
-        bottom_wall[x].coordinate.x=dx*x;
-        bottom_wall[x].coordinate.y=0;
-        bottom_wall[x].condition = 0;
-        bottom_wall[x].velocity.x = 0;
-        bottom_wall[x].velocity.y = 0;
-    }
-
-
-
-
-    grid_step(grid, grid_copy);
+    for(int i = 0; i < 100; i++) grid_step(grid, grid_copy, demo_function);
     grid_draw(grid, 1000, 800, 1);
+
 
     for(int i = 0; i < Nx; i++) {
         free(grid[i]);
         free(grid_copy[i]);
     }
 
-    free(right_wall);
-    free(left_wall);
-    free(top_wall);
-    free(bottom_wall);
-
     free(grid);
     free(grid_copy);
+    
+    return 0;
 }

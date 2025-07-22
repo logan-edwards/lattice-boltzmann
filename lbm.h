@@ -1,8 +1,9 @@
 #include <SDL2/SDL.h>
-#include <stdio.h>
 
 #ifndef LBM_HEADER
 #define LBM_HEADER
+
+
 
 typedef struct vec2 {
 	double x;
@@ -14,13 +15,8 @@ typedef struct gridpoint {
 	vec2 velocity;
 	double density;
 	double f[9];
+	int boundary_type;
 } gridpoint;
-
-typedef struct boundary {
-	int condition;
-	vec2 coordinate;
-	vec2 velocity;
-} boundary;
 
 typedef struct color {
 	unsigned int r;
@@ -39,8 +35,11 @@ TO-DO with BCs:
 */
 
 void grid_initialize(gridpoint** grid);
-void grid_step(gridpoint** grid, gridpoint** swap_grid);
+void grid_step(gridpoint** grid, gridpoint** swap_grid, void (*apply_boundary_conditions)(gridpoint**));
 void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_height, int var_type);
 double dotprod2(vec2 u, vec2 v);
+
+
+
 
 #endif
