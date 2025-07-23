@@ -105,6 +105,7 @@ void grid_step(gridpoint** grid, gridpoint** swap_grid, void (*apply_boundary_co
 
             /* Collision step */
             for(int k = 0; k < 9; k++) {
+                if(grid[i][j].f[k] < 0) printf("Negative f detected on grid[%d][%d].f[%d]\n", i, j, k);
                 swap_grid[i][j].f[k] = grid[i][j].f[k] - (1/tau) * (grid[i][j].f[k] - f_eq[k]);
             }
         }
@@ -183,10 +184,11 @@ void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_
 }
 
 void demo_lid_driven_cavity_flow(gridpoint** grid) {
-
-        // Velocity condition
     double rho_approx;
     double u_fixed = 0.1;
+
+
+    // Velocity condition
     for(int x = 0; x < Nx; x++) {
         rho_approx = grid[x][Ny-1].f[0] + grid[x][Ny-1].f[1] + grid[x][Ny-1].f[3] + 2 * (grid[x][Ny-1].f[2] + grid[x][Ny-1].f[5] + grid[x][Ny-1].f[6]);
         grid[x][Ny-1].f[4] = grid[x][Ny-1].f[2];
@@ -217,8 +219,8 @@ int main(int argc, double** argv) {
     double length;
     double height;
     // things to be read by config file:
-    Nx = 80;
-    Ny = 80;
+    Nx = 40;
+    Ny = 40;
     length = 0.1;
     height = 0.1;
 
