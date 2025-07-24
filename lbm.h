@@ -40,4 +40,6 @@ void grid_stream(int N, gridpoint** grid, gridpoint** swap_grid);
 void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int screen_height);
 
 int is_in_domain(int N, int x, int y);
+
+double compute_time_constant();
 #endif

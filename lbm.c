@@ -127,3 +127,10 @@ void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int 
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
+
+double compute_time_constant(double lattice_velocity, int lattice_length, double reynolds_number) {
+    double lattice_viscosity, tau;
+    lattice_viscosity = lattice_velocity * lattice_length / reynolds_number;
+    tau = 3.0 * lattice_viscosity + 0.5;
+    return(tau);
+}
