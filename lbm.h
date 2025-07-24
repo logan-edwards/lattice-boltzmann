@@ -3,19 +3,15 @@
 #ifndef LBM_HEADER
 #define LBM_HEADER
 
-
-
 typedef struct vec2 {
 	double x;
 	double y;
 } vec2;
 
 typedef struct gridpoint {
-	vec2 coordinate;
 	vec2 velocity;
 	double density;
 	double f[9];
-	int boundary_type;
 } gridpoint;
 
 typedef struct color {
@@ -25,21 +21,23 @@ typedef struct color {
 	unsigned int alpha;
 } color;
 
-/*
-TO-DO with BCs:
-	Generalized Bounce-Back. For fixed wall, v=0 and this is a no-slip condition
-	For wall with v = [vx, vy] this can function as a velocity inlet
+static const double LBM_weight[9] = {4.0/9.0, 
+    1.0/9.0, 1.0/9.0, 1.0/9.0, 1.0/9.0, 
+    1.0/36.0, 1.0/36.0, 1.0/36.0, 1.0/36.0
+};
 
-	Zero-Gradient Boundary. This is an "open boundary", i.e. a pressure outlet.
+static const vec2 LBM_e[9] = {
+    {0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0},
+    {-1.0, 0.0}, {0.0, -1.0}, {1.0, 1.0},
+    {-1.0, 1.0}, {-1.0, -1.0}, {1.0, -1.0}
+};
 
-*/
+static const double LBM_cs = 1/1.73205080757; // lattice speed of sound = 1/sqrt(3)
 
-void grid_initialize(gridpoint** grid);
-void grid_step(gridpoint** grid, gridpoint** swap_grid, void (*apply_boundary_conditions)(gridpoint**));
-void grid_draw(gridpoint** grid, unsigned int screen_width, unsigned int screen_height, int var_type);
-double dotprod2(vec2 u, vec2 v);
+void grid_initialize(int N, double rho, gridpoint** grid);
+void grid_collision(int N, double tau, gridpoint** grid, gridpoint** swap_grid);
+void grid_stream(int N, gridpoint** grid, gridpoint** swap_grid);
+void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int screen_height);
 
-
-
-
+int is_in_domain(int N, int x, int y);
 #endif
