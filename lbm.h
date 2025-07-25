@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <math.h>
 
 #ifndef LBM_HEADER
 #define LBM_HEADER
@@ -40,6 +41,7 @@ void grid_stream(int N, gridpoint** grid, gridpoint** swap_grid);
 void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int screen_height);
 
 int is_in_domain(int N, int x, int y);
+double vec2_magnitude(vec2 u);
 
-double compute_time_constant();
+double compute_time_constant(double lattice_velocity, int lattice_length, double reynolds_number);
 #endif
