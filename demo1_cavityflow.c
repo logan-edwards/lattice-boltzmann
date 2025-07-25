@@ -10,6 +10,9 @@ void handle_bcs_cavityflow(int N, gridpoint** grid, double lid_speed) {
         grid[x][N-1].f[4] = grid[x][N-1].f[2];
         grid[x][N-1].f[7] = 0.5 * (grid[x][N-1].f[1] - grid[x][N-1].f[3] + 2 * grid[x][N-1].f[5] - rho_approx * lid_speed);
         grid[x][N-1].f[8] = -0.5 * (grid[x][N-1].f[1] - grid[x][N-1].f[3] - 2 * grid[x][N-1].f[6] - rho_approx * lid_speed); 
+//        grid[x][N-1].f[4] = grid[x][N-1].f[2];
+//        grid[x][N-1].f[7] = grid[x][N-1].f[5];
+//        grid[x][N-1].f[8] = grid[x][N-1].f[6]; // temporary bounceback
     }
 
     // zhou-he bounce-back on bottom wall:
@@ -35,7 +38,7 @@ int main(int argc, double** argv) {
     int N = 80;
     double rho = 1.0;
     double reynolds_number = 200.0;
-    int n_timesteps = 500;
+    int n_timesteps = 20;
     double vel = 0.1;
     double tau = compute_time_constant(vel, N, reynolds_number);    // 200 is reynolds number for this flow so we get ~laminar
     printf("Tau = %f\n", tau);
@@ -60,7 +63,8 @@ int main(int argc, double** argv) {
         grid_copy = swap;
     }
     printf("\nCenter velocity = (%f,%f)\n\n", grid[N/2][N/2].velocity.x, grid[N/2][N/2].velocity.y);
-    grid_draw(N, grid, 800, 800);
+    grid_draw(N, grid, 800, 800, 'd');
+    grid_draw(N, grid, 800, 800, 'v');
 
     for(int i = 0; i < N; i++) {
         free(grid[i]);
@@ -71,3 +75,15 @@ int main(int argc, double** argv) {
 
     return 0;
 }
+
+/* NOTE TO SELF ON CURRENT ISSUES:
+
+When running w/ current boundary conditions, the following happens:
+    density is initialized properly, but the density at the velocity boundary approaches infinity while the remainder of the domain
+    either (a) remains fixed at 1 or decreases (i cannot tell yet haven't debugged this)
+        - this is caused by f_eq increasing far above 1 at the lid for each i = 1,...9 (only at the lid though, nowhere else)
+    velocity remains 0 throughout the entire domain except at the boundary, where velocity is constant and properly applied
+
+the question is then twofold: (1) why is density bunching up at the top? and (2) why is momentum not being transferred away from the lid?
+
+*/

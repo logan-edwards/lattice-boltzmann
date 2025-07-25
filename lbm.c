@@ -42,6 +42,8 @@ void grid_collision(int N, double tau, gridpoint** grid, gridpoint** swap_grid) 
                 - 3 * u_dot_u / (2 * LBM_cs * LBM_cs)
                 );
 
+                if(f_eq[i] > 1) printf("f_eq[%d] = %f\n at (%d,%d)", i, f_eq[i], x, y); // THIS IS THE PROBLEM POINT!!! top becomes infinitely dense
+
                 /* Collision step */
                 swap_grid[x][y].f[i] = grid[x][y].f[i] + (f_eq[i] - grid[x][y].f[i]) / tau;
             }
@@ -52,10 +54,10 @@ void grid_collision(int N, double tau, gridpoint** grid, gridpoint** swap_grid) 
 }
 
 void grid_stream(int N, gridpoint** grid, gridpoint** swap_grid) {
-    for(int x = 0; x < N; x++) {
-        for(int y = 0; y < N; y++) {
+    for(int x = 1; x < N-1; x++) {
+        for(int y = 1; y < N-1; y++) {
             for(int i = 0; i < 9; i++) {
-                if(is_in_domain(N, x+LBM_e[i].x, y+LBM_e[i].y) == 1) {
+                if(is_in_domain(N, x + LBM_e[i].x, y + LBM_e[i].y) == 1) {
                     grid[x + (int)LBM_e[i].x][y + (int)LBM_e[i].y].f[i] = swap_grid[x][y].f[i];
                 }
             }
@@ -70,78 +72,106 @@ int is_in_domain(int N, int x, int y) {
     return 1;
 }
 
-void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int screen_height) {
+void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int screen_height, char mode) {
     
     int x, y; // x,y value on original grid
-
-    /*
-
-    double max_val, min_val;
-
-    max_val = grid[0][0].density;
-    min_val = max_val;
-    for(int i = 0; i < N; i++) {
-        for(int j = 0; j < N; j++) {
-            if(grid[i][j].density > max_val) max_val = grid[i][j].density;
-            if(grid[i][j].density < min_val) min_val = grid[i][j].density;
-        }
-    }
-    printf("Minimum density = %f\n Maximum density = %f", min_val, max_val);
-    */
-
-    // this is just for troubleshooting:
-    double maxvel_x, maxvel_y, minvel_x, minvel_y;
-    maxvel_x = grid[0][0].velocity.x;
-    maxvel_y = grid[0][0].velocity.y;
-    minvel_x = maxvel_x;
-    minvel_y = maxvel_y;
-    for(int i = 0; i < N; i++) {
-        for(int j = 0; j < N; j++) {
-            if(grid[i][j].velocity.x > maxvel_x) maxvel_x = grid[i][j].velocity.x;
-            if(grid[i][j].velocity.x < minvel_x) minvel_x = grid[i][j].velocity.x;
-            if(grid[i][j].velocity.y > maxvel_y) maxvel_y = grid[i][j].velocity.y;
-            if(grid[i][j].velocity.y < minvel_y) minvel_y = grid[i][j].velocity.y;
-        }
-    }
-    printf("Max velocity components: %f in x, %f in y\n", maxvel_x, maxvel_y);
-    printf("Min veloicty components: %f in x, %f in y\n", minvel_x, minvel_y);
-
-    double maxmag, minmag;
-    maxmag = vec2_magnitude(grid[0][0].velocity);
-    for(int i = 0; i < N; i++) {
-        for(int j = 0; j < N; j++) {
-            if(vec2_magnitude(grid[i][j].velocity) > maxmag) maxmag = vec2_magnitude(grid[i][j].velocity);
-            if(vec2_magnitude(grid[i][j].velocity) < minmag) minmag = vec2_magnitude(grid[i][j].velocity);
-        }
-    }
-    printf("Max magnitude: %f\nMin magnitude: %f", maxmag, minmag);
-
     // initialize color grid:
     color** color_grid = malloc(screen_width * sizeof(color*));
     for(int i = 0; i < screen_width; i++) {
         color_grid[i] = malloc(screen_height * sizeof(color));
     }
-    for(int i = 0; i < screen_width; i++) {
-        for(int j = 0; j < screen_height; j++) {
-            x = (double)i * N / screen_width;
-            y = -1.0 * j * N / screen_height + N;
-            //if(grid[x][y].density >= 0) {
-                color_grid[i][j].r = 0;
-                //color_grid[i][j].r = grid[x][y].velocity.x * 255.0 / (maxvel_x - minvel_x);
-                color_grid[i][j].g = 0;
-                //color_grid[i][j].b = grid[x][y].density * 255 / (maxmag - minmag);  // interpolate such that 0 density is black. if desired, replace 0 with min_val
-                color_grid[i][j].b = vec2_magnitude(grid[x][y].velocity) * 255.0 / (maxmag-minmag);
-                //color_grid[i][j].b = grid[x][y].velocity.y * 255.0 / (maxvel_y - minvel_y);
-                color_grid[i][j].alpha = 255;
-            //}
-            /*else {
-                color_grid[i][j].r = 255;
-                color_grid[i][j].g = 0;
-                color_grid[i][j].b = 0;
-                color_grid[i][j].alpha = 255;                                   // sets negative densities to red to detect errors
-            }*/
+    if(mode == 'd') {
+        double max_val, min_val;
+
+        max_val = grid[0][0].density;
+        min_val = max_val;
+        for(int i = 0; i < N; i++) {
+            for(int j = 0; j < N; j++) {
+                if(grid[i][j].density > max_val) max_val = grid[i][j].density;
+                if(grid[i][j].density < min_val) min_val = grid[i][j].density;
+            }
         }
-    }
+        printf("Minimum density = %f\n Maximum density = %f", min_val, max_val);
+        for(int i = 0; i < screen_width; i++) {
+            for(int j = 0; j < screen_height; j++) {
+                x = (double)i * N / screen_width;
+                y = -1.0 * j * N / screen_height + N;
+                if(grid[x][y].density >= 0) {
+                    color_grid[i][j].r = 0;
+                    //color_grid[i][j].r = grid[x][y].velocity.x * 255.0 / (maxvel_x - minvel_x);
+                    color_grid[i][j].g = 0;
+                    color_grid[i][j].b = grid[x][y].density * 255 / (max_val - 0);  // interpolate such that 0 density is black. if desired, replace 0 with min_val
+                    //color_grid[i][j].b = vec2_magnitude(grid[x][y].velocity) * 255.0 / (maxmag-minmag);
+                    //color_grid[i][j].b = grid[x][y].velocity.y * 255.0 / (maxvel_y - minvel_y);
+                    color_grid[i][j].alpha = 255;
+                }
+                else {
+                    color_grid[i][j].r = 255;
+                    color_grid[i][j].g = 0;
+                    color_grid[i][j].b = 0;
+                    color_grid[i][j].alpha = 255;                                   // sets negative densities to red to detect errors
+                }
+            }
+        }
+}
+        else if (mode == 'v') {
+            double maxvel_x, maxvel_y, minvel_x, minvel_y;
+            maxvel_x = grid[0][0].velocity.x;
+            maxvel_y = grid[0][0].velocity.y;
+            minvel_x = maxvel_x;
+            minvel_y = maxvel_y;
+            for(int i = 0; i < N; i++) {
+                for(int j = 0; j < N; j++) {
+                    if(grid[i][j].velocity.x > maxvel_x) maxvel_x = grid[i][j].velocity.x;
+                    if(grid[i][j].velocity.x < minvel_x) minvel_x = grid[i][j].velocity.x;
+                    if(grid[i][j].velocity.y > maxvel_y) maxvel_y = grid[i][j].velocity.y;
+                    if(grid[i][j].velocity.y < minvel_y) minvel_y = grid[i][j].velocity.y;
+                }
+            }
+            printf("Max velocity components: %f in x, %f in y\n", maxvel_x, maxvel_y);
+            printf("Min veloicty components: %f in x, %f in y\n", minvel_x, minvel_y);
+
+            double maxmag, minmag;
+            maxmag = vec2_magnitude(grid[0][0].velocity);
+            for(int i = 0; i < N; i++) {
+                for(int j = 0; j < N; j++) {
+                    if(vec2_magnitude(grid[i][j].velocity) > maxmag) maxmag = vec2_magnitude(grid[i][j].velocity);
+                    if(vec2_magnitude(grid[i][j].velocity) < minmag) minmag = vec2_magnitude(grid[i][j].velocity);
+                }
+            }
+            printf("Max magnitude: %f\nMin magnitude: %f", maxmag, minmag);
+
+            for(int i = 0; i < screen_width; i++) {
+                for(int j = 0; j < screen_height; j++) {
+                    x = (double)i * N / screen_width;
+                    y = -1.0 * j * N / screen_height + N;
+                    //if(grid[x][y].density >= 0) {
+                        color_grid[i][j].r = 0;
+                        //color_grid[i][j].r = grid[x][y].velocity.x * 255.0 / (maxvel_x - minvel_x);
+                        color_grid[i][j].g = 0;
+                        //color_grid[i][j].b = grid[x][y].density * 255 / (maxmag - minmag);  // interpolate such that 0 density is black. if desired, replace 0 with min_val
+                        color_grid[i][j].b = vec2_magnitude(grid[x][y].velocity) * 255.0 / (maxmag-minmag);
+                        //color_grid[i][j].b = grid[x][y].velocity.y * 255.0 / (maxvel_y - minvel_y);
+                        color_grid[i][j].alpha = 255;
+                    //}
+                    /*else {
+                        color_grid[i][j].r = 255;
+                        color_grid[i][j].g = 0;
+                        color_grid[i][j].b = 0;
+                        color_grid[i][j].alpha = 255;                                   // sets negative densities to red to detect errors
+                    }*/
+                }
+            }
+}
+        else if (mode == 'p') {
+            printf("Pressure condition not yet implemented\n");
+}
+            else printf("Unknown mode \"%d\"\n", mode);
+    
+    
+
+    // this is just for troubleshooting:
+    
     SDL_Event event;
     SDL_Renderer *renderer;
     SDL_Window *window;
