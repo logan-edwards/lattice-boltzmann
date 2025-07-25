@@ -32,10 +32,10 @@ void handle_bcs_cavityflow(int N, gridpoint** grid, double lid_speed) {
 }
 
 int main(int argc, double** argv) {
-    int N = 40;
+    int N = 80;
     double rho = 1.0;
     double reynolds_number = 200.0;
-    int n_timesteps = 5000;
+    int n_timesteps = 500;
     double vel = 0.1;
     double tau = compute_time_constant(vel, N, reynolds_number);    // 200 is reynolds number for this flow so we get ~laminar
     printf("Tau = %f\n", tau);
@@ -59,6 +59,7 @@ int main(int argc, double** argv) {
         grid = grid_copy;
         grid_copy = swap;
     }
+    printf("\nCenter velocity = (%f,%f)\n\n", grid[N/2][N/2].velocity.x, grid[N/2][N/2].velocity.y);
     grid_draw(N, grid, 800, 800);
 
     for(int i = 0; i < N; i++) {
