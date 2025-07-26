@@ -35,12 +35,12 @@ static const vec2 LBM_e[9] = {
 
 static const double LBM_cs = 1/1.73205080757; // lattice speed of sound = 1/sqrt(3)
 
-void grid_initialize(int N, double rho, gridpoint** grid);
-void grid_collision(int N, double tau, gridpoint** grid, gridpoint** swap_grid);
-void grid_stream(int N, gridpoint** grid, gridpoint** swap_grid);
-void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int screen_height, char mode);
+void grid_initialize(int Nx, int Ny, double rho, gridpoint** grid);
+void grid_collision(int Nx, int Ny, double tau, gridpoint** grid, gridpoint** swap_grid);
+void grid_stream(int Nx, int Ny, gridpoint** grid, gridpoint** swap_grid);
+void grid_draw(int Nx, int Ny, gridpoint** grid, unsigned int screen_width, unsigned int screen_height, char mode);
 
-int is_in_domain(int N, int x, int y);
+int is_in_domain(int Nx, int Ny, int x, int y);
 double vec2_magnitude(vec2 u);
 
 double compute_time_constant(double lattice_velocity, int lattice_length, double reynolds_number);

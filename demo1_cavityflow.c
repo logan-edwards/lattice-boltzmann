@@ -51,20 +51,20 @@ int main(int argc, double** argv) {
     }
     gridpoint** swap;
 
-    grid_initialize(N, rho, grid);
+    grid_initialize(N, N, rho, grid);
 
     for(int t = 0; t < n_timesteps; t++) {
-        grid_collision(N, tau, grid, grid_copy);
-        handle_bcs_cavityflow(N, grid_copy, vel);
-        grid_stream(N, grid, grid_copy);
+        grid_collision(N, N, tau, grid, grid_copy);
+        handle_bcs_cavityflow(N, grid_copy, vel); // only one input N because we assume square domain for cavity flow
+        grid_stream(N, N, grid, grid_copy);
 
         swap = grid;
         grid = grid_copy;
         grid_copy = swap;
     }
     printf("\nCenter velocity = (%f,%f)\n\n", grid[N/2][N/2].velocity.x, grid[N/2][N/2].velocity.y);
-    grid_draw(N, grid, 800, 800, 'd');
-    grid_draw(N, grid, 800, 800, 'v');
+    grid_draw(N, N, grid, 800, 800, 'd');
+    grid_draw(N, N, grid, 800, 800, 'v');
 
     for(int i = 0; i < N; i++) {
         free(grid[i]);

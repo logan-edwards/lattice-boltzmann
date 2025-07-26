@@ -1,22 +1,22 @@
 #include "lbm.h"
 #include <SDL2/SDL.h>
 
-void grid_initialize(int N, double rho, gridpoint** grid) {
-    for(int x = 0; x < N; x++) {
-        for(int y = 0; y < N; y++) {
+void grid_initialize(int Nx, int Ny, double rho, gridpoint** grid) {
+    for(int x = 0; x < Nx; x++) {
+        for(int y = 0; y < Ny; y++) {
             for(int i = 0; i < 9; i++) grid[x][y].f[i] = rho * LBM_weight[i];
         }
     }
 }
 
-void grid_collision(int N, double tau, gridpoint** grid, gridpoint** swap_grid) {
+void grid_collision(int Nx, int Ny, double tau, gridpoint** grid, gridpoint** swap_grid) {
     double lattice_density;
     vec2 lattice_momentum;
     double f_eq[9];
     double e_dot_u, u_dot_u;
 
-    for(int x = 0; x < N; x++) {
-        for(int y = 0; y < N; y++) {
+    for(int x = 0; x < Nx; x++) {
+        for(int y = 0; y < Ny; y++) {
             /* Computation of density and velocity */
             lattice_density = 0;
             lattice_momentum.x = 0;
@@ -49,15 +49,15 @@ void grid_collision(int N, double tau, gridpoint** grid, gridpoint** swap_grid) 
             }
         }
         // TEST for velocity ~= 0.1:
-        if(abs(grid[x][N-1].velocity.x - 0.1) > 1e-8) printf("Bad BC at x=%d, velocity is (%f,%f)", x, grid[x][N-1].velocity.x,grid[x][N-1].velocity.y);
+        if(abs(grid[x][Ny-1].velocity.x - 0.1) > 1e-8) printf("Bad BC at x=%d, velocity is (%f,%f)", x, grid[x][Ny-1].velocity.x,grid[x][Ny-1].velocity.y);
     }
 }
 
-void grid_stream(int N, gridpoint** grid, gridpoint** swap_grid) {
-    for(int x = 1; x < N-1; x++) {
-        for(int y = 1; y < N-1; y++) {
+void grid_stream(int Nx, int Ny, gridpoint** grid, gridpoint** swap_grid) {
+    for(int x = 1; x < Nx-1; x++) {
+        for(int y = 1; y < Ny-1; y++) {
             for(int i = 0; i < 9; i++) {
-                if(is_in_domain(N, x + LBM_e[i].x, y + LBM_e[i].y) == 1) {
+                if(is_in_domain(Nx, Ny, x + LBM_e[i].x, y + LBM_e[i].y) == 1) {
                     grid[x + (int)LBM_e[i].x][y + (int)LBM_e[i].y].f[i] = swap_grid[x][y].f[i];
                 }
             }
@@ -65,14 +65,14 @@ void grid_stream(int N, gridpoint** grid, gridpoint** swap_grid) {
     }
 }
 
-int is_in_domain(int N, int x, int y) {
-    if(x >= (N-1) || x <= 0) return 0;
-    if(y >= (N-1) || y <= 0) return 0;
+int is_in_domain(int Nx, int Ny, int x, int y) {
+    if(x >= (Nx-1) || x <= 0) return 0;
+    if(y >= (Ny-1) || y <= 0) return 0;
     
     return 1;
 }
 
-void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int screen_height, char mode) {
+void grid_draw(int Nx, int Ny, gridpoint** grid, unsigned int screen_width, unsigned int screen_height, char mode) {
     
     int x, y; // x,y value on original grid
     // initialize color grid:
@@ -85,8 +85,8 @@ void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int 
 
         max_val = grid[0][0].density;
         min_val = max_val;
-        for(int i = 0; i < N; i++) {
-            for(int j = 0; j < N; j++) {
+        for(int i = 0; i < Nx; i++) {
+            for(int j = 0; j < Ny; j++) {
                 if(grid[i][j].density > max_val) max_val = grid[i][j].density;
                 if(grid[i][j].density < min_val) min_val = grid[i][j].density;
             }
@@ -94,8 +94,8 @@ void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int 
         printf("Minimum density = %f\n Maximum density = %f", min_val, max_val);
         for(int i = 0; i < screen_width; i++) {
             for(int j = 0; j < screen_height; j++) {
-                x = (double)i * N / screen_width;
-                y = -1.0 * j * N / screen_height + N;
+                x = (double)i * Nx / screen_width;
+                y = -1.0 * j * Ny / screen_height + Ny;
                 if(grid[x][y].density >= 0) {
                     color_grid[i][j].r = 0;
                     //color_grid[i][j].r = grid[x][y].velocity.x * 255.0 / (maxvel_x - minvel_x);
@@ -120,8 +120,8 @@ void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int 
             maxvel_y = grid[0][0].velocity.y;
             minvel_x = maxvel_x;
             minvel_y = maxvel_y;
-            for(int i = 0; i < N; i++) {
-                for(int j = 0; j < N; j++) {
+            for(int i = 0; i < Nx; i++) {
+                for(int j = 0; j < Ny; j++) {
                     if(grid[i][j].velocity.x > maxvel_x) maxvel_x = grid[i][j].velocity.x;
                     if(grid[i][j].velocity.x < minvel_x) minvel_x = grid[i][j].velocity.x;
                     if(grid[i][j].velocity.y > maxvel_y) maxvel_y = grid[i][j].velocity.y;
@@ -133,8 +133,8 @@ void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int 
 
             double maxmag, minmag;
             maxmag = vec2_magnitude(grid[0][0].velocity);
-            for(int i = 0; i < N; i++) {
-                for(int j = 0; j < N; j++) {
+            for(int i = 0; i < Nx; i++) {
+                for(int j = 0; j < Ny; j++) {
                     if(vec2_magnitude(grid[i][j].velocity) > maxmag) maxmag = vec2_magnitude(grid[i][j].velocity);
                     if(vec2_magnitude(grid[i][j].velocity) < minmag) minmag = vec2_magnitude(grid[i][j].velocity);
                 }
@@ -143,8 +143,8 @@ void grid_draw(int N, gridpoint** grid, unsigned int screen_width, unsigned int 
 
             for(int i = 0; i < screen_width; i++) {
                 for(int j = 0; j < screen_height; j++) {
-                    x = (double)i * N / screen_width;
-                    y = -1.0 * j * N / screen_height + N;
+                    x = (double)i * Nx / screen_width;
+                    y = -1.0 * j * Ny / screen_height + Ny;
                     //if(grid[x][y].density >= 0) {
                         color_grid[i][j].r = 0;
                         //color_grid[i][j].r = grid[x][y].velocity.x * 255.0 / (maxvel_x - minvel_x);
