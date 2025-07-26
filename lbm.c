@@ -1,5 +1,4 @@
 #include "lbm.h"
-#include <SDL2/SDL.h>
 
 void grid_initialize(int Nx, int Ny, double rho, gridpoint** grid) {
     for(int x = 0; x < Nx; x++) {
@@ -9,56 +8,60 @@ void grid_initialize(int Nx, int Ny, double rho, gridpoint** grid) {
     }
 }
 
-void grid_collision(int Nx, int Ny, double tau, gridpoint** grid, gridpoint** swap_grid) {
-    double lattice_density;
-    vec2 lattice_momentum;
+void grid_collision(int Nx, int Ny, double tau, gridpoint** grid) {
+    double cpow2, cpow4;
+    cpow2 = LBM_cs * LBM_cs;
+    cpow4 = cpow2 * cpow2;
+
+    double u_dot_u, e_dot_u;
+
+    double local_density, local_momentum_x, local_momentum_y;
     double f_eq[9];
-    double e_dot_u, u_dot_u;
 
     for(int x = 0; x < Nx; x++) {
         for(int y = 0; y < Ny; y++) {
             /* Computation of density and velocity */
-            lattice_density = 0;
-            lattice_momentum.x = 0;
-            lattice_momentum.y = 0;
-            for(int i = 0; i < 9; i++) lattice_density += grid[x][y].f[i];
-            grid[x][y].density = lattice_density;
+            local_density = 0;
+            local_momentum_x = 0;
+            local_momentum_y = 0;
             for(int i = 0; i < 9; i++) {
-                lattice_momentum.x += grid[x][y].f[i] * LBM_e[i].x;
-                lattice_momentum.y += grid[x][y].f[i] * LBM_e[i].y;
+                local_density += grid[x][y].f[i];
+                local_momentum_x += grid[x][y].f[i] * LBM_e[i].x;
+                local_momentum_y += grid[x][y].f[i] * LBM_e[i].y;
             }
-            grid[x][y].velocity.x = lattice_momentum.x / lattice_density;
-            grid[x][y].velocity.y = lattice_momentum.y / lattice_density;
+            grid[x][y].density = local_density;
+            grid[x][y].velocity.x = local_momentum_x / grid[x][y].density;
+            grid[x][y].velocity.y = local_momentum_y / grid[x][y].density;
 
             /* Computation of f_eq */
+            u_dot_u = grid[x][y].velocity.x * grid[x][y].velocity.x + grid[x][y].velocity.y * grid[x][y].velocity.y;
             for(int i = 0; i < 9; i++) {
                 e_dot_u = LBM_e[i].x * grid[x][y].velocity.x + LBM_e[i].y * grid[x][y].velocity.y;
-                u_dot_u = grid[x][y].velocity.x * grid[x][y].velocity.x + grid[x][y].velocity.y * grid[x][y].velocity.y;
                 
-                f_eq[i] = LBM_weight[i]*grid[x][y].density * (
-                1 +
-                3 * e_dot_u / (LBM_cs * LBM_cs) 
-                + 9 * e_dot_u * e_dot_u / (2 * LBM_cs * LBM_cs * LBM_cs * LBM_cs) 
-                - 3 * u_dot_u / (2 * LBM_cs * LBM_cs)
+                f_eq[i] = LBM_weight[i] * grid[x][y].density * (1 
+                + (3.0 * e_dot_u / cpow2) 
+                + (4.5 * e_dot_u * e_dot_u / cpow4) 
+                - (1.5 * u_dot_u / cpow2)
                 );
+            }
 
-                if(f_eq[i] > 1) printf("f_eq[%d] = %f\n at (%d,%d)", i, f_eq[i], x, y); // THIS IS THE PROBLEM POINT!!! top becomes infinitely dense
-
-                /* Collision step */
-                swap_grid[x][y].f[i] = grid[x][y].f[i] + (f_eq[i] - grid[x][y].f[i]) / tau;
+            /* Collision step */
+            for(int i = 0; i < 9; i++) {
+                grid[x][y].fstar[i] = grid[x][y].f[i] + ((f_eq[i] - grid[x][y].f[i]) / tau);
             }
         }
-        // TEST for velocity ~= 0.1:
-        if(abs(grid[x][Ny-1].velocity.x - 0.1) > 1e-8) printf("Bad BC at x=%d, velocity is (%f,%f)", x, grid[x][Ny-1].velocity.x,grid[x][Ny-1].velocity.y);
     }
 }
 
-void grid_stream(int Nx, int Ny, gridpoint** grid, gridpoint** swap_grid) {
-    for(int x = 1; x < Nx-1; x++) {
-        for(int y = 1; y < Ny-1; y++) {
+void grid_stream(int Nx, int Ny, gridpoint** grid) {
+    int xneighbor, yneighbor;
+    for(int x = 0; x < Nx; x++) {
+        for(int y = 0; y < Ny; y++) {
             for(int i = 0; i < 9; i++) {
-                if(is_in_domain(Nx, Ny, x + LBM_e[i].x, y + LBM_e[i].y) == 1) {
-                    grid[x + (int)LBM_e[i].x][y + (int)LBM_e[i].y].f[i] = swap_grid[x][y].f[i];
+                xneighbor = x + LBM_e[i].x;
+                yneighbor = y + LBM_e[i].y;
+                if(is_in_domain(Nx, Ny, xneighbor, yneighbor)) {
+                    grid[xneighbor][yneighbor].f[i] = grid[x][y].fstar[i];
                 }
             }
         }
@@ -66,8 +69,8 @@ void grid_stream(int Nx, int Ny, gridpoint** grid, gridpoint** swap_grid) {
 }
 
 int is_in_domain(int Nx, int Ny, int x, int y) {
-    if(x >= (Nx-1) || x <= 0) return 0;
-    if(y >= (Ny-1) || y <= 0) return 0;
+    if(x > Nx-1 || x < 0) return 0;
+    if(y > Ny-1 || y < 0) return 0;
     
     return 1;
 }

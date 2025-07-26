@@ -13,6 +13,7 @@ typedef struct gridpoint {
 	vec2 velocity;
 	double density;
 	double f[9];
+	double fstar[9];
 } gridpoint;
 
 typedef struct color {
@@ -33,11 +34,11 @@ static const vec2 LBM_e[9] = {
     {-1.0, 1.0}, {-1.0, -1.0}, {1.0, -1.0}
 };
 
-static const double LBM_cs = 1/1.73205080757; // lattice speed of sound = 1/sqrt(3)
+static const double LBM_cs = 1.0/1.73205080757; // lattice speed of sound = 1/sqrt(3)
 
 void grid_initialize(int Nx, int Ny, double rho, gridpoint** grid);
-void grid_collision(int Nx, int Ny, double tau, gridpoint** grid, gridpoint** swap_grid);
-void grid_stream(int Nx, int Ny, gridpoint** grid, gridpoint** swap_grid);
+void grid_collision(int Nx, int Ny, double tau, gridpoint** grid);
+void grid_stream(int Nx, int Ny, gridpoint** grid);
 void grid_draw(int Nx, int Ny, gridpoint** grid, unsigned int screen_width, unsigned int screen_height, char mode);
 
 int is_in_domain(int Nx, int Ny, int x, int y);
