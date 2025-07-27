@@ -48,11 +48,11 @@ void grid_collision(int Nx, int Ny, double tau, gridpoint** grid) {
             /* Collision step */
             for(int i = 0; i < 9; i++) {
                 grid[x][y].fstar[i] = grid[x][y].f[i] + ((f_eq[i] - grid[x][y].f[i]) / tau);
-                //grid[x][y].f[i] = 0;
             }
         }
     }
 }
+
 
 void grid_stream(int Nx, int Ny, gridpoint** grid) {
     int xneighbor, yneighbor;
@@ -63,12 +63,13 @@ void grid_stream(int Nx, int Ny, gridpoint** grid) {
                 yneighbor = y + LBM_e[i].y;
                 if(is_in_domain(Nx, Ny, xneighbor, yneighbor)) {
                     grid[xneighbor][yneighbor].f[i] = grid[x][y].fstar[i];
-                    //grid[x][y].fstar[i] = 0;
+                    grid[x][y].fstar[i] = 0; // this line does nothing
                 }
             }
         }
     }
 }
+
 
 int is_in_domain(int Nx, int Ny, int x, int y) {
     if(x > Nx-1 || x < 0) return 0;
