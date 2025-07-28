@@ -51,5 +51,4 @@ void compute_pressure_field(int Nx, int Ny, gridpoint** grid);
 void compute_density_field(int Nx, int Ny, gridpoint** grid);
 void compute_velocity_field(int Nx, int Ny, gridpoint** grid);
 void compute_equilibrium_field(int Nx, int Ny, gridpoint** grid);
-void swap_streaming_outputs(int Nx, int Ny, gridpoint** grid);					// not strictly necessary but is for this implementation
 #endif

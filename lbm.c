@@ -1,5 +1,21 @@
 #include "lbm.h"
 
+/*
+
+An implementation of this code follows the general algorithm:
+
+1. initialize grid. the grid_initialize() function will set a uniform initial density across an allocated gridpoint matrix.
+2. for each (x,y) point:
+    a) compute density
+    b) compute velocity
+    c) compute f at equilibrium
+3. collision step (computation of f*)
+4. apply boundary conditions (this is problem-specific; these should be applied to f, NOT f*.
+    This should replace values which do not have neighbors to stream from in step 5)
+5. streaming step (move f* to replace neighboring f)
+
+*/
+
 void grid_initialize(int Nx, int Ny, double rho, gridpoint** grid) {
     for(int x = 0; x < Nx; x++) {
         for(int y = 0; y < Ny; y++) {

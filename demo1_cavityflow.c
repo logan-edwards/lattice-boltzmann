@@ -23,10 +23,10 @@ void handle_bcs_bounceback(int N, gridpoint** grid) {
 }
 
 int main(int argc, double** argv) {
-    int N = 200;
+    int N = 64;
     double rho = 1.0;
     double reynolds_number = 200.0;
-    int n_timesteps = 5000;
+    int n_timesteps = 50;
     double vel = 0.1;
     double tau = compute_time_constant(vel, N, reynolds_number);    // 200 is reynolds number for this flow so we get ~laminar
     printf("Tau = %f\n", tau);
@@ -41,6 +41,7 @@ int main(int argc, double** argv) {
     for(int i = 0; i < 9; i++) grid[N/2][N/2].f[i] = LBM_weight[i] * 5.0;
 
     for(int t = 0; t < n_timesteps; t++) {
+        printf("Timestep %d... ", t);
         compute_density_field(N, N, grid);
         compute_velocity_field(N, N, grid);
         compute_equilibrium_field(N, N, grid);
@@ -49,6 +50,7 @@ int main(int argc, double** argv) {
         grid_collision(N, N, tau, grid);
         handle_bcs_bounceback(N, grid);
         grid_stream(N, N, grid);
+        printf("done.\n");
     }
 
     grid_draw(N, N, grid, 800, 800, 'd');
@@ -61,15 +63,3 @@ int main(int argc, double** argv) {
 
     return 0;
 }
-
-/* NOTE TO SELF ON CURRENT ISSUES:
-
-When running w/ current boundary conditions, the following happens:
-    density is initialized properly, but the density at the velocity boundary approaches infinity while the remainder of the domain
-    either (a) remains fixed at 1 or decreases (i cannot tell yet haven't debugged this)
-        - this is caused by f_eq increasing far above 1 at the lid for each i = 1,...9 (only at the lid though, nowhere else)
-    velocity remains 0 throughout the entire domain except at the boundary, where velocity is constant and properly applied
-
-the question is then twofold: (1) why is density bunching up at the top? and (2) why is momentum not being transferred away from the lid?
-
-*/
