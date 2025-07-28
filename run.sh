@@ -1,5 +1,7 @@
 #!/bin/bash
 
-gcc lbm.c demo1_cavityflow.c -o cavityflow -lSDL2 -lm
+gcc lbm.c demo1_massdiffusion.c -o demo1 -lSDL2 -lm
+gcc lbm.c demo2_cavityflow.c -o demo2 -lSDL2 -lm
 
-./cavityflow
+#./demo1
+./demo2

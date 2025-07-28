@@ -23,12 +23,12 @@ void handle_bcs_bounceback(int N, gridpoint** grid) {
 }
 
 int main(int argc, double** argv) {
-    int N = 64;
+    int N = 200;
     double rho = 1.0;
-    double reynolds_number = 200.0;
-    int n_timesteps = 50;
+    double reynolds_number = 2000.0;
+    int n_timesteps = 50000;
     double vel = 0.1;
-    double tau = compute_time_constant(vel, N, reynolds_number);    // 200 is reynolds number for this flow so we get ~laminar
+    double tau = compute_time_constant(vel, N, reynolds_number);
     printf("Tau = %f\n", tau);
 
     gridpoint** grid = malloc(N * sizeof(gridpoint*));
@@ -39,6 +39,14 @@ int main(int argc, double** argv) {
     grid_initialize(N, N, rho, grid);
 
     for(int i = 0; i < 9; i++) grid[N/2][N/2].f[i] = LBM_weight[i] * 5.0;
+
+    SDL_Event event;
+    SDL_Renderer *renderer;
+    SDL_Window *window;
+    SDL_Init(SDL_INIT_VIDEO);
+    SDL_CreateWindowAndRenderer(800, 800, 0, &window, &renderer);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
+    SDL_RenderClear(renderer);
 
     for(int t = 0; t < n_timesteps; t++) {
         printf("Timestep %d... ", t);
@@ -51,10 +59,18 @@ int main(int argc, double** argv) {
         handle_bcs_bounceback(N, grid);
         grid_stream(N, N, grid);
         printf("done.\n");
+        grid_plot_realtime(N, N, grid, event, renderer, window, 800, 800, 'v');
     }
 
-    grid_draw(N, N, grid, 800, 800, 'd');
-    grid_draw(N, N, grid, 800, 800, 'v');
+    SDL_RenderPresent(renderer);
+    while (1) {
+        if (SDL_PollEvent(&event) && event.type == SDL_QUIT) {
+            break;
+        }
+    }
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 
     for(int i = 0; i < N; i++) {
         free(grid[i]);

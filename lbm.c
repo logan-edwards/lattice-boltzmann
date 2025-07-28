@@ -121,6 +121,7 @@ int is_in_domain(int Nx, int Ny, int x, int y) {
     return 1;
 }
 
+// grid_draw is really janky
 void grid_draw(int Nx, int Ny, gridpoint** grid, unsigned int screen_width, unsigned int screen_height, char mode) {
     
     int x, y; // x,y value on original grid
@@ -245,6 +246,84 @@ void grid_draw(int Nx, int Ny, gridpoint** grid, unsigned int screen_width, unsi
     SDL_Quit();
 }
 
+void grid_plot_realtime(int Nx, int Ny, gridpoint** grid, SDL_Event event, SDL_Renderer *renderer, SDL_Window *window, int screen_width, unsigned int screen_height, char mode) {
+    color** color_grid = malloc(screen_width * sizeof(color*));
+    double maxval, minval;
+    int x, y;
+    for(int i = 0; i < screen_width; i++) {
+        color_grid[i] = malloc(screen_height * sizeof(color));
+    }
 
-/* NEW NOTE: erasing old values is resulting in different behavior. therefore,
-something is janky w/ how old values are re-used when they shouldn't be. */
+    if(mode == 'd') {
+        maxval = grid[0][0].density;
+        minval = maxval;
+        for(int i = 0; i < Nx; i++) {
+            for(int j = 0; j < Ny; j++) {
+                if(grid[i][j].density > maxval) maxval = grid[i][j].density;
+                if(grid[i][j].density < minval) minval = grid[i][j].density;
+            }
+        }
+
+    }
+    else if(mode == 'v') {
+        double vel_mag;
+        maxval = vec2_magnitude(grid[0][0].velocity);
+        minval = maxval;
+        for(int i = 0; i < Nx; i++) {
+            for(int j = 0; j < Ny; j++) {
+                vel_mag = vec2_magnitude(grid[i][j].velocity);
+                if(vel_mag > maxval) maxval = vel_mag;
+                if(vel_mag < minval) minval = vel_mag;
+            }
+        }
+    }
+    else if(mode == 'p') {
+        printf("Still need to implement this\n"); // this will involve a different drawing style too
+        return;
+    }
+    else {
+        printf("Invalid mode %c\n", mode);
+    }
+
+    for(int i = 0; i < screen_width; i++) {
+        for(int j = 0; j < screen_height; j++) {
+            x = (double)i * Nx / screen_width;
+            y = -1.0 * j * Ny / screen_height + Ny;
+            if(mode == 'd') {
+                color_grid[i][j].r = 0;
+                color_grid[i][j].g = 0;
+                color_grid[i][j].b = grid[x][y].density * 255 / (maxval - 0);
+                color_grid[i][j].alpha = 255;
+            }
+            else if(mode == 'v') {
+                color_grid[i][j].r = 0;
+                color_grid[i][j].g = 0;
+                color_grid[i][j].b = vec2_magnitude(grid[x][y].velocity) * 255 / (maxval - 0);
+            }
+            else if(mode == 'p') {
+                printf("need to implement pressure still\n");
+            }
+            else {
+                printf("Error: bad mode read in visualizer\n");
+            }
+        }
+    }
+    for(int i = 0; i < screen_width; i++) {
+        for(int j = 0; j < screen_height; j++) {
+            SDL_SetRenderDrawColor(renderer, 0, 0, color_grid[i][j].b, 0);
+            SDL_RenderDrawPoint(renderer, i, j);
+        }
+    }
+
+    for(int i = 0; i < screen_width; i++) {
+        free(color_grid[i]);
+    }
+    free(color_grid);
+
+    if(SDL_PollEvent(&event) && event.type == SDL_QUIT) {
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+    }
+    SDL_RenderPresent(renderer);
+}
