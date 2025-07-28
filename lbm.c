@@ -8,68 +8,95 @@ void grid_initialize(int Nx, int Ny, double rho, gridpoint** grid) {
     }
 }
 
-void grid_collision(int Nx, int Ny, double tau, gridpoint** grid) {
-    double cpow2, cpow4;
-    cpow2 = LBM_cs * LBM_cs;
-    cpow4 = cpow2 * cpow2;
+double compute_time_constant(double lattice_velocity, int lattice_length, double reynolds_number) {
+    double lattice_viscosity, tau;
+    lattice_viscosity = lattice_velocity * lattice_length / reynolds_number;
+    tau = 3.0 * lattice_viscosity + 0.5;
+    return(tau);
+}
 
-    double u_dot_u, e_dot_u;
+double vec2_magnitude(vec2 u) {
+    return(sqrt(u.x * u.x + u.y * u.y));
+}
 
-    double local_density, local_momentum_x, local_momentum_y;
-    double f_eq[9];
-
+void compute_pressure_field(int Nx, int Ny, gridpoint** grid) {
+    double cspow2 = LBM_cs * LBM_cs;
     for(int x = 0; x < Nx; x++) {
         for(int y = 0; y < Ny; y++) {
-            /* Computation of density and velocity */
-            local_density = 0;
-            local_momentum_x = 0;
-            local_momentum_y = 0;
-            for(int i = 0; i < 9; i++) {
-                local_density += grid[x][y].f[i];
-                local_momentum_x += grid[x][y].f[i] * LBM_e[i].x;
-                local_momentum_y += grid[x][y].f[i] * LBM_e[i].y;
-            }
-            grid[x][y].density = local_density;
-            grid[x][y].velocity.x = local_momentum_x / grid[x][y].density;
-            grid[x][y].velocity.y = local_momentum_y / grid[x][y].density;
+            grid[x][y].pressure = cspow2 * grid[x][y].density;
+        }
+    }
+}
 
-            /* Computation of f_eq */
-            u_dot_u = grid[x][y].velocity.x * grid[x][y].velocity.x + grid[x][y].velocity.y * grid[x][y].velocity.y;
+void compute_density_field(int Nx, int Ny, gridpoint** grid) {
+    double density;
+    for(int x = 0; x < Nx; x++) {
+        for(int y = 0 ; y < Ny; y++) {
+            density = 0;
             for(int i = 0; i < 9; i++) {
-                e_dot_u = LBM_e[i].x * grid[x][y].velocity.x + LBM_e[i].y * grid[x][y].velocity.y;
-                
-                f_eq[i] = LBM_weight[i] * grid[x][y].density * (1 
-                + (3.0 * e_dot_u / cpow2) 
-                + (4.5 * e_dot_u * e_dot_u / cpow4) 
-                - (1.5 * u_dot_u / cpow2)
-                );
+                density += grid[x][y].f[i];
             }
+            grid[x][y].density = density;
+        }
+    }
+}
 
-            /* Collision step */
+void compute_velocity_field(int Nx, int Ny, gridpoint** grid) {
+    double momentum_x, momentum_y;
+    for(int x = 0; x < Nx; x++) {
+        for(int y = 0; y < Ny; y++) {
+            momentum_x = 0;
+            momentum_y = 0;
             for(int i = 0; i < 9; i++) {
-                grid[x][y].fstar[i] = grid[x][y].f[i] + ((f_eq[i] - grid[x][y].f[i]) / tau);
+                momentum_x += LBM_e[i].x * grid[x][y].f[i];
+                momentum_y += LBM_e[i].y * grid[x][y].f[i];
+            }
+            grid[x][y].velocity.x = momentum_x / grid[x][y].density;
+            grid[x][y].velocity.y = momentum_y / grid[x][y].density;
+        }
+    }
+}
+
+void compute_equilibrium_field(int Nx, int Ny, gridpoint** grid) {
+    double e_dot_u, u_dot_u;
+    for(int x = 0; x < Nx; x++) {
+        for(int y = 0; y < Ny; y++) {
+            u_dot_u = grid[x][y].velocity.x * grid[x][y].velocity.x 
+                    + grid[x][y].velocity.y * grid[x][y].velocity.y;
+            for(int i = 0; i < 9; i++) {
+                e_dot_u = LBM_e[i].x * grid[x][y].velocity.x
+                        + LBM_e[i].y * grid[x][y].velocity.y;
+                grid[x][y].feq[i] = LBM_weight[i] * grid[x][y].density * (
+                1.0 + 3.0 * e_dot_u + 4.5 * e_dot_u * e_dot_u - 1.5 * u_dot_u);
             }
         }
     }
 }
 
-
-void grid_stream(int Nx, int Ny, gridpoint** grid) {
-    int xneighbor, yneighbor;
+void grid_collision(int Nx, int Ny, double tau, gridpoint** grid) {
     for(int x = 0; x < Nx; x++) {
         for(int y = 0; y < Ny; y++) {
             for(int i = 0; i < 9; i++) {
-                xneighbor = x + LBM_e[i].x;
-                yneighbor = y + LBM_e[i].y;
-                if(is_in_domain(Nx, Ny, xneighbor, yneighbor)) {
-                    grid[xneighbor][yneighbor].f[i] = grid[x][y].fstar[i];
-                    grid[x][y].fstar[i] = 0; // this line does nothing
+                grid[x][y].fstar[i] = grid[x][y].f[i] - (grid[x][y].f[i] - grid[x][y].feq[i]) / tau;
+            }
+        }
+    }
+}
+
+void grid_stream(int Nx, int Ny, gridpoint** grid) {
+    int xnew, ynew;
+    for(int x = 0; x < Nx; x++) {
+        for(int y = 0; y < Ny; y++) {
+            for(int i = 0; i < 9; i++) {
+                xnew = x+LBM_e[i].x;
+                ynew = y+LBM_e[i].y;
+                if(is_in_domain(Nx, Ny, xnew, ynew) == 1) {
+                    grid[xnew][ynew].f[i] = grid[x][y].fstar[i];                // this is f[i] at t+1
                 }
             }
         }
     }
 }
-
 
 int is_in_domain(int Nx, int Ny, int x, int y) {
     if(x > Nx-1 || x < 0) return 0;
@@ -202,16 +229,6 @@ void grid_draw(int Nx, int Ny, gridpoint** grid, unsigned int screen_width, unsi
     SDL_Quit();
 }
 
-double compute_time_constant(double lattice_velocity, int lattice_length, double reynolds_number) {
-    double lattice_viscosity, tau;
-    lattice_viscosity = lattice_velocity * lattice_length / reynolds_number;
-    tau = 3.0 * lattice_viscosity + 0.5;
-    return(tau);
-}
-
-double vec2_magnitude(vec2 u) {
-    return(sqrt(u.x * u.x + u.y * u.y));
-}
 
 /* NEW NOTE: erasing old values is resulting in different behavior. therefore,
 something is janky w/ how old values are re-used when they shouldn't be. */

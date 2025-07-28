@@ -12,8 +12,10 @@ typedef struct vec2 {
 typedef struct gridpoint {
 	vec2 velocity;
 	double density;
+	double pressure;
 	double f[9];
 	double fstar[9];
+	double feq[9];
 } gridpoint;
 
 typedef struct color {
@@ -45,4 +47,9 @@ int is_in_domain(int Nx, int Ny, int x, int y);
 double vec2_magnitude(vec2 u);
 
 double compute_time_constant(double lattice_velocity, int lattice_length, double reynolds_number);
+void compute_pressure_field(int Nx, int Ny, gridpoint** grid);
+void compute_density_field(int Nx, int Ny, gridpoint** grid);
+void compute_velocity_field(int Nx, int Ny, gridpoint** grid);
+void compute_equilibrium_field(int Nx, int Ny, gridpoint** grid);
+void swap_streaming_outputs(int Nx, int Ny, gridpoint** grid);					// not strictly necessary but is for this implementation
 #endif

@@ -1,26 +1,17 @@
 #include "lbm.h"
 
-void handle_bcs_cavityflow(int N, gridpoint** grid, double lid_speed) {
-
-    float rho_approx;
-
-    // known velocity condition at top wall (lid):
-    for(int x = 0; x < N; x++) {
-        rho_approx = grid[x][N-1].f[0] + grid[x][N-1].f[1] + grid[x][N-1].f[3] + 2 * (grid[x][N-1].f[2] + grid[x][N-1].f[5] + grid[x][N-1].f[6]);
-        grid[x][N-1].f[4] = grid[x][N-1].f[2];
-        grid[x][N-1].f[7] = 0.5 * (grid[x][N-1].f[1] - grid[x][N-1].f[3] + 2 * grid[x][N-1].f[5] - rho_approx * lid_speed);
-        grid[x][N-1].f[8] = -0.5 * (grid[x][N-1].f[1] - grid[x][N-1].f[3] - 2 * grid[x][N-1].f[6] - rho_approx * lid_speed); 
-    }
-
-    // zhou-he bounce-back on bottom wall:
+void handle_bcs_bounceback(int N, gridpoint** grid) {
     for(int x = 0; x < N; x++) {
         grid[x][0].f[2] = grid[x][0].f[4];
         grid[x][0].f[5] = grid[x][0].f[7];
         grid[x][0].f[6] = grid[x][0].f[8];
+    
+        grid[x][N-1].f[4] = grid[x][N-1].f[2];
+        grid[x][N-1].f[7] = grid[x][N-1].f[5];
+        grid[x][N-1].f[8] = grid[x][N-1].f[6];
     }
 
-    // zhou-he bounce-back on side walls excluding topmost node (velocity boundary):
-    for(int y = 0; y < N-1; y++) {
+    for(int y = 0; y < N; y++) {
         grid[0][y].f[1] = grid[0][y].f[3];
         grid[0][y].f[5] = grid[0][y].f[7];
         grid[0][y].f[8] = grid[0][y].f[6];
@@ -32,10 +23,10 @@ void handle_bcs_cavityflow(int N, gridpoint** grid, double lid_speed) {
 }
 
 int main(int argc, double** argv) {
-    int N = 20;
+    int N = 200;
     double rho = 1.0;
     double reynolds_number = 200.0;
-    int n_timesteps = 200;
+    int n_timesteps = 5000;
     double vel = 0.1;
     double tau = compute_time_constant(vel, N, reynolds_number);    // 200 is reynolds number for this flow so we get ~laminar
     printf("Tau = %f\n", tau);
@@ -47,12 +38,19 @@ int main(int argc, double** argv) {
 
     grid_initialize(N, N, rho, grid);
 
+    for(int i = 0; i < 9; i++) grid[N/2][N/2].f[i] = LBM_weight[i] * 5.0;
+
     for(int t = 0; t < n_timesteps; t++) {
+        compute_density_field(N, N, grid);
+        compute_velocity_field(N, N, grid);
+        compute_equilibrium_field(N, N, grid);
+
+
         grid_collision(N, N, tau, grid);
-        handle_bcs_cavityflow(N, grid, vel); // only one input N because we assume square domain for cavity flow
-        for(int x = 0; x < N; x++) for(int y = 0; y < N; y++) if (grid[x][y].density < 0) printf("t=%d\tNegative density at (%d,%d): rho = %f\n", t, x, y, grid[x][y].density);
+        handle_bcs_bounceback(N, grid);
         grid_stream(N, N, grid);
     }
+
     grid_draw(N, N, grid, 800, 800, 'd');
     grid_draw(N, N, grid, 800, 800, 'v');
 
