@@ -8,9 +8,9 @@ void handle_bcs_cavity(int N, double lid_speed, gridpoint** grid) {
         grid[x][0].f[5] = grid[x][0].f[7];
         grid[x][0].f[6] = grid[x][0].f[8];
     
-    	//grid[x][N-1].f[4] = grid[x][N-1].f[2];
-        //grid[x][N-1].f[7] = grid[x][N-1].f[5];
-        //grid[x][N-1].f[8] = grid[x][N-1].f[6];
+    	grid[x][N-1].f[4] = grid[x][N-1].f[2];
+        grid[x][N-1].f[7] = grid[x][N-1].f[5];
+        grid[x][N-1].f[8] = grid[x][N-1].f[6];
     }
 
     for(int y = 0; y < N-1; y++) {
@@ -24,11 +24,13 @@ void handle_bcs_cavity(int N, double lid_speed, gridpoint** grid) {
     }
 
 	// velocity condition
+	// THESE VELOCITY CONDITIONS ARE CLEARLY WRONG. Read more literature and figure out
+	// how to derive these from f_eq equations(?) instead of from f itself (i believe?)
 	for(int x = 0; x < N; x++) {
-		rho_approx = grid[x][N-1].f[N-1] + grid[x][N-1].f[1] + grid[x][N-1].f[3] + 2 * (grid[x][N-1].f[4] + grid[x][N-1].f[7] + grid[x][N-1].f[8]);
+		rho_approx = grid[x][N-1].f[0] + grid[x][N-1].f[1] + grid[x][N-1].f[3] + 2 * (grid[x][N-1].f[2] + grid[x][N-1].f[5] + grid[x][N-1].f[6]);
 		grid[x][N-1].f[4] = grid[x][N-1].f[2];
-		grid[x][N-1].f[7] = grid[x][N-1].f[5] + 0.5 * (grid[x][N-1].f[1] - grid[x][N-1].f[3]) + (1.0/6.0) * rho_approx * lid_speed;
-		grid[x][N-1].f[8] = grid[x][N-1].f[6] + 0.5 * (grid[x][N-1].f[3] - grid[x][N-1].f[1]) - (1.0/6.0) * rho_approx * lid_speed;
+		grid[x][N-1].f[7] = -0.5 * (rho_approx * lid_speed - grid[x][N-1].f[1] + grid[x][N-1].f[3] - 2 * grid[x][N-1].f[2] - 2 *grid[x][N-1].f[5]);
+		grid[x][N-1].f[8] = grid[x][N-1].f[2] - grid[x][N-1].f[4] + grid[x][N-1].f[5] + grid[x][N-1].f[6] - grid[x][N-1].f[7];
 	}
 }
 
@@ -66,7 +68,8 @@ int main() {
         handle_bcs_cavity(N, vel, grid);
         grid_stream(N, N, grid);
 
-        printf("done.\n");
+        if(fabs(grid[N/2][N/2].velocity.x - 0.1) < 1e-6 || fabs(grid[N/2][N/2].velocity.y < 1e-6)) printf("done.\n");
+		else printf("Velocity at boundary: (%f,%f)\n", grid[N/2][N/2].velocity.x, grid[N/2][N/2].velocity.y);
         grid_plot_realtime(N, N, grid, event, renderer, window, 800, 800, 'v');
     }
 
