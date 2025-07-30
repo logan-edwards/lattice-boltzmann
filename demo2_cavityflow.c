@@ -1,6 +1,6 @@
 #include "lbm.h"
 
-void handle_bcs_cavity(int N, double lid_speed, gridpoint** grid) {
+void handle_bcs_cavity(int N, double lid_speed, gridpoint** grid, double tau) {
 	double rho_approx;
 	// zhou-he bounceback
 	for(int x = 0; x < N; x++) {
@@ -23,23 +23,14 @@ void handle_bcs_cavity(int N, double lid_speed, gridpoint** grid) {
         grid[N-1][y].f[6] = grid[N-1][y].f[8];
     }
 
-/*
-rho = f0 + f1 + f3 + 2*(f2 + f5 + f6);  // estimated rho from known f_i
-// compute feq[i] for all i using rho and u = (lid_speed, 0)
-
-f4 = feq4 + (f2 - feq2);
-f7 = feq7 + (f5 - feq5);
-f8 = feq8 + (f6 - feq6);
-*/
-
 	// velocity condition
 	for(int x = 1; x < N-1; x++) {
-		// this set isn't bad; it roughly holds boundary conditions and gives roughly correct flow w/ enough iterations
 		rho_approx = grid[x][N-1].f[0] + grid[x][N-1].f[1] + grid[x][N-1].f[3] + 2 * (grid[x][N-1].f[2] + grid[x][N-1].f[5] + grid[x][N-1].f[6]);
 
-		grid[x][N-1].f[4] = grid[x][N-1].feq[4] + (grid[x][N-1].f[2] - grid[x][N-1].feq[2]);
-		grid[x][N-1].f[7] = grid[x][N-1].feq[7] + (grid[x][N-1].f[5] - grid[x][N-1].feq[5]);
-		grid[x][N-1].f[8] = grid[x][N-1].feq[8] + (grid[x][N-1].f[6] - grid[x][N-1].feq[6]);
+		grid[x][N-1].f[4] = grid[x][N-1].f[2];
+		grid[x][N-1].f[7] = grid[x][N-1].f[5] - 2.0 * rho_approx * lid_speed * LBM_weight[7] / (LBM_cs * LBM_cs); // from teacher's website
+		grid[x][N-1].f[8] = grid[x][N-1].f[6] + 2.0 * rho_approx * lid_speed * LBM_weight[8] / (LBM_cs * LBM_cs);
+		
 	}
 }
 
@@ -47,7 +38,7 @@ int main() {
     int N = 80;
     double rho = 1.0;
     double reynolds_number = 200.0;
-    int n_timesteps = 4000;
+    int n_timesteps = 2000;
     double vel = 0.1;
     double tau = compute_time_constant(vel, N, reynolds_number);
     printf("Tau = %f\n", tau);
@@ -74,11 +65,11 @@ int main() {
         compute_equilibrium_field(N, N, grid);
 
         grid_collision(N, N, tau, grid);
-        handle_bcs_cavity(N, vel, grid);
+        handle_bcs_cavity(N, vel, grid, tau);
         grid_stream(N, N, grid);
 
-        if(fabs(grid[N/2][N-1].velocity.x - 0.1) < 1e-6 || fabs(grid[N/2][N-1].velocity.y < 1e-6)) printf("done.\n");
-		else printf("Velocity at boundary: (%f,%f)\n", grid[N/2][N/2].velocity.x, grid[N/2][N/2].velocity.y);
+        if(fabs(grid[N/2][N-1].velocity.x - 0.1) < 1e-6 && fabs(grid[N/2][N-1].velocity.y < 1e-6)) printf("done.\n");
+		else printf("Velocity at boundary: (%f,%f)\n", grid[N/2][N-1].velocity.x, grid[N/2][N-1].velocity.y);
         grid_plot_realtime(N, N, grid, event, renderer, window, 800, 800, 'v');
     }
 
