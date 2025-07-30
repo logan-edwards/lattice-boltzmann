@@ -1,6 +1,6 @@
 #include "lbm.h"
 
-void handle_bcs_cavity(int N, double lid_speed, gridpoint** grid) {
+void handle_bcs_cavity(int N, double velocity, gridpoint** grid) {
 	double rho_approx;
 	// zhou-he bounceback
 	for(int x = 0; x < N; x++) {
@@ -13,34 +13,28 @@ void handle_bcs_cavity(int N, double lid_speed, gridpoint** grid) {
         grid[x][N-1].f[8] = grid[x][N-1].f[6];
     }
 
-    for(int y = 0; y < N-1; y++) {
-        grid[0][y].f[1] = grid[0][y].f[3];
-        grid[0][y].f[5] = grid[0][y].f[7];
-        grid[0][y].f[8] = grid[0][y].f[6];
+    for(int y = 0; y < N; y++) {
+        //grid[0][y].f[1] = grid[0][y].f[3];
+        //grid[0][y].f[5] = grid[0][y].f[7];
+        //grid[0][y].f[8] = grid[0][y].f[6];
 
         grid[N-1][y].f[3] = grid[N-1][y].f[1];
         grid[N-1][y].f[7] = grid[N-1][y].f[5];
         grid[N-1][y].f[6] = grid[N-1][y].f[8];
     }
 
-/*
-rho = f0 + f1 + f3 + 2*(f2 + f5 + f6);  // estimated rho from known f_i
-// compute feq[i] for all i using rho and u = (lid_speed, 0)
+    // velocity condition at left wall; something janky here, i think i need to actually handle the corner nodes differently
+    for(int y = 0; y < N; y++) {
+        rho_approx = (1.0 / (1-velocity)) * (grid[0][y].f[0] + grid[0][y].f[2] + grid[0][y].f[4] + 2 * (grid[0][y].f[3] + grid[0][y].f[6] + grid[0][y].f[7]));
+        grid[0][y].f[1] = grid[0][y].f[3] + 2.0 / 3.0 * rho_approx * velocity;
+        grid[0][y].f[5] = grid[0][y].f[7] - 0.5 * (grid[0][y].f[2] - grid[0][y].f[4]) + 1.0 / 6.0 * rho_approx * velocity;
+        grid[0][y].f[8] = grid[0][y].f[6] + 0.5 * (grid[0][y].f[2] - grid[0][y].f[4]) + 1.0 / 6.0 * rho_approx * velocity;
+        if(y == 0) {grid[0][y].f[1] = grid[0][y].f[3]; grid[0][y].f[2] = grid[0][y].f[4];}
+        if(y == N-1) {grid[0][y].f[1] = grid[0][y].f[3]; grid[0][y].f[2] = grid[0][y].f[4];}
 
-f4 = feq4 + (f2 - feq2);
-f7 = feq7 + (f5 - feq5);
-f8 = feq8 + (f6 - feq6);
-*/
+    }
 
-	// velocity condition
-	for(int x = 1; x < N-1; x++) {
-		// this set isn't bad; it roughly holds boundary conditions and gives roughly correct flow w/ enough iterations
-		rho_approx = grid[x][N-1].f[0] + grid[x][N-1].f[1] + grid[x][N-1].f[3] + 2 * (grid[x][N-1].f[2] + grid[x][N-1].f[5] + grid[x][N-1].f[6]);
 
-		grid[x][N-1].f[4] = grid[x][N-1].feq[4] + (grid[x][N-1].f[2] - grid[x][N-1].feq[2]);
-		grid[x][N-1].f[7] = grid[x][N-1].feq[7] + (grid[x][N-1].f[5] - grid[x][N-1].feq[5]);
-		grid[x][N-1].f[8] = grid[x][N-1].feq[8] + (grid[x][N-1].f[6] - grid[x][N-1].feq[6]);
-	}
 }
 
 int main() {
@@ -77,9 +71,9 @@ int main() {
         handle_bcs_cavity(N, vel, grid);
         grid_stream(N, N, grid);
 
-        if(fabs(grid[N/2][N-1].velocity.x - 0.1) < 1e-6 || fabs(grid[N/2][N-1].velocity.y < 1e-6)) printf("done.\n");
+        if(fabs(grid[N/2][N/2].velocity.x - 0.1) < 1e-6 || fabs(grid[N/2][N/2].velocity.y < 1e-6)) printf("done.\n");
 		else printf("Velocity at boundary: (%f,%f)\n", grid[N/2][N/2].velocity.x, grid[N/2][N/2].velocity.y);
-        grid_plot_realtime(N, N, grid, event, renderer, window, 800, 800, 'v');
+        grid_plot_realtime(N, N, grid, event, renderer, window, 800, 800, 'd');
     }
 
     SDL_RenderPresent(renderer);
