@@ -1,6 +1,15 @@
 #include <SDL2/SDL.h>
 #include <math.h>
 
+/* TO-DO:
+1. Add convergence checks, i.e. store a grid and compare values every 100 steps or so, or calculate max difference between two grids and 
+2. Add save and load feature for grids for two reasons: 1. so data can be saved automatically and reloaded (i.e. very 500 iterations) in event of crash, 
+	and 2. for future visualizations so data, i.e. velocity, can be read from a structured csv file
+3. CUDA speedups (this will take a good deal of work)
+
+plan is to add these before continuing with demos (i.e. channel flow)
+*/
+
 #ifndef LBM_HEADER
 #define LBM_HEADER
 

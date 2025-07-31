@@ -37,8 +37,8 @@ void handle_bcs_cavity(int N, double lid_speed, gridpoint** grid, double tau) {
 int main() {
     int N = 80;
     double rho = 1.0;
-    double reynolds_number = 200.0;
-    int n_timesteps = 2000;
+    double reynolds_number = 1000.0;
+    int n_timesteps = 100000;
     double vel = 0.1;
     double tau = compute_time_constant(vel, N, reynolds_number);
     printf("Tau = %f\n", tau);

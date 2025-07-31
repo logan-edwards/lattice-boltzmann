@@ -101,6 +101,7 @@ void grid_collision(int Nx, int Ny, double tau, gridpoint** grid) {
 
 void grid_stream(int Nx, int Ny, gridpoint** grid) {
     int xnew, ynew;
+    // Do NOT change indices. Changing indices prevents boundary conditions from being applied
     for(int x = 0; x < Nx; x++) {
         for(int y = 0; y < Ny; y++) {
             for(int i = 0; i < 9; i++) {
