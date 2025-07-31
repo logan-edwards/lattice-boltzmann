@@ -49,12 +49,12 @@ int main() {
     double rho = 1.0;
     double reynolds_number = 200.0;
     double vel = 0.1;
-    double tau = compute_time_constant(vel, N, reynolds_number);
+    double tau = compute_time_constant(vel, 2*N, reynolds_number);
     printf("Tau = %f\n", tau);
 
 	/* Memory allocation for grid */
-    gridpoint** grid = malloc(N * sizeof(gridpoint*));
-    for(int i = 0; i < N; i++) {
+    gridpoint** grid = malloc(2*N * sizeof(gridpoint*));
+    for(int i = 0; i < 2*N; i++) {
         grid[i] = malloc(N * sizeof(gridpoint));
 	}
 
@@ -66,7 +66,7 @@ int main() {
     SDL_Renderer *renderer;
     SDL_Window *window;
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_CreateWindowAndRenderer(800, 800, 0, &window, &renderer);
+    SDL_CreateWindowAndRenderer(2*800, 800, 0, &window, &renderer);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
 
