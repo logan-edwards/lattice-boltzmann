@@ -52,7 +52,7 @@ int main() {
         grid[i] = malloc(N * sizeof(gridpoint));
 	}
 
-	/* Initialize NxN grid with constant density */
+	/* Initialize Nx2N grid with constant density */
 	grid_initialize(2*N, N, rho, grid);
 
 	/* Set up renderer to display each timestep */
