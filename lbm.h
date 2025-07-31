@@ -66,8 +66,8 @@ void grid_initialize(int Nx, int Ny, double rho, gridpoint** grid);
 void grid_collision(int Nx, int Ny, double tau, gridpoint** grid);
 void grid_stream(int Nx, int Ny, gridpoint** grid);
 void grid_duplicate(int Nx, int Ny, gridpoint** grid_src, gridpoint** grid_target);
-void grid_save(int Nx, int Ny, gridpoint** grid, char* filename);
-void grid_load(gridpoint** grid, char* filename);
+//void grid_save(int Nx, int Ny, gridpoint** grid, char* filename);
+//void grid_load(gridpoint** grid, char* filename);
 
 // helper functions
 double compute_time_constant(double lattice_velocity, int lattice_length, double reynolds_number);
@@ -76,7 +76,6 @@ void compute_density_field(int Nx, int Ny, gridpoint** grid);
 void compute_velocity_field(int Nx, int Ny, gridpoint** grid);
 void compute_equilibrium_field(int Nx, int Ny, gridpoint** grid);
 double vec2_magnitude(vec2 u);
-double max_delta(int Nx, int Ny, gridpoint** grid_old, gridpoint** grid_new, char qty);
 int is_in_domain(int Nx, int Ny, int x, int y);
 
 // plotting functions

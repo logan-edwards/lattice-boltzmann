@@ -247,7 +247,7 @@ void plot_grid(int Nx, int Ny, gridpoint** grid, unsigned int screen_width, unsi
     SDL_Quit();
 }
 
-void update_plot(int Nx, int Ny, gridpoint** grid, SDL_Event event, SDL_Renderer *renderer, SDL_Window *window, int screen_width, unsigned int screen_height, char mode) {
+void plot_update(int Nx, int Ny, gridpoint** grid, SDL_Event event, SDL_Renderer *renderer, SDL_Window *window, int screen_width, unsigned int screen_height, char mode) {
     color** color_grid = malloc(screen_width * sizeof(color*));
     double maxval, minval;
     int x, y;
@@ -326,89 +326,4 @@ void update_plot(int Nx, int Ny, gridpoint** grid, SDL_Event event, SDL_Renderer
         SDL_Quit();
     }
     SDL_RenderPresent(renderer);
-}
-
-void grid_duplicate(int Nx, int Ny, gridpoint** grid_src, gridpoint** grid_target) {
-    for(int x = 0; x < Nx; x++) {
-        for(int y = 0; y < Ny; y++) {
-            for(int i = 0; i < 9; i++) {
-                grid_target[x][y].f[i] = grid_src[x][y].f[i];
-                grid_target[x][y].feq[i] = grid_src[x][y].feq[i];
-                grid_target[x][y].fstar[i] = grid_src[x][y].fstar[i];
-            }
-            grid_target[x][y].density = grid_src[x][y].density;
-            grid_target[x][y].pressure = grid_src[x][y].pressure;
-            grid_target[x][y].velocity.x = grid_src[x][y].velocity.x;
-            grid_target[x][y].velocity.y = grid_src[x][y].velocity.y;
-        }
-    }
-}
-
-void grid_save(int Nx, int Ny, gridpoint** grid, char* filename) {
-    FILE *ptr;
-
-    ptr = fopen(filename, 'w');
-    if(ptr == NULL) {
-        printf("Failed to open or create file. Exiting...");
-        return;
-    }
-
-    /*
-    File format:
-    Header:     Nx,Ny
-    Contents:   f0,f1,f2,f3,f4,f5,f6,f7,f8,f9\
-    Note that no other values are technically necessary as these are computed at runtime
-    */
-
-    fprintf(ptr, "%d,%d\n", Nx, Ny); // Header for file is Nx,Ny to specify grid size
-    for(int x = 0; x < Nx; x++) {
-        for(int y = 0; y < Ny; y++) {
-            fprintf("%d,%d",Nx,Ny);
-            for(int i = 0; i < 8; i++) {
-                fprintf(ptr, "%f,", grid[x][y].f[i]);
-            }
-            fprintf(ptr, "%f\n", grid[x][y].f[8]);
-        }
-    }
-    fclose(ptr);
-}
-
-void grid_load(gridpoint** grid, char* filename) {
-    int Nx, Ny;
-    double temp;
-    // need to work on this function
-
-}
-
-
-double max_delta(int Nx, int Ny, gridpoint** grid_old, gridpoint** grid_new, char qty) {
-    double max_delta = 0;
-    if(qty == 'd') {
-        max_delta = grid_new[0][0].density - grid_old[0][0].density;
-        for(int x = 0; x < Nx; x++) {
-            for(int y = 0; y < Ny; y++) {
-                // if |rho_new - rho_old| > |max_delta|, set max_delta = rho_new - rho_old
-                if(fabs(grid_new[x][y].density - grid_old[x][y].density) > fabs(max_delta)) {
-                    max_delta = grid_new[x][y].density - grid_old[x][y].density;
-                }
-            }
-        }
-    }
-
-    else if(qty == 'v') {
-        max_delta = vec2_magnitude(grid_new[0][0].velocity) - vec2_magnitude(grid_old[0][0].velocity);
-        for(int x = 0; x < Nx; x++) {
-            for(int y = 0; y < Ny; y++) {
-                // if |(|v_new| - |v_old|)| > |max_delta|, set max_delta = |v_new| - |v_old| 
-                if(fabs(vec2_magnitude(grid_new[x][y].velocity) - vec2_magnitude(grid_old[x][y].velocity)) > fabs(max_delta)) {
-                    max_delta = vec2_magnitude(grid_new[x][y].velocity) - vec2_magnitude(grid_old[x][y].velocity);
-                }
-            }
-        }
-    }
-
-    else {
-        printf("Unknown quantity abbreviation %c\n", qty);
-        return 0;
-    }
 }
