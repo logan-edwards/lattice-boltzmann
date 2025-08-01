@@ -7,7 +7,7 @@ The demo files contain examples for any boundary condition one would *technicall
 
 *Demo 1* models the shockwave developing from an initial pressure condition. Boundary conditions are no-slip (bounceback) on every wall. Symmetry of solution is expected and is a simple sanity check for the solver alongside long-term convergence of density.
 
-![demo1.png, depicting a symmetric shockwave](img/shockpoint.png){align="center"}
+![demo1.png, depicting a symmetric shockwave](img/shockpoint.png)
 
 *Demo 2* models lid-driven cavity flow in a laminar regime. Boundary conditions are no-slip (bounceback) on side walls and floor and fixed velocity (momentum) condition on the lid. With many timesteps (~100,000), clear steady-state streamlines emerge as expected in a square cavity.
 
