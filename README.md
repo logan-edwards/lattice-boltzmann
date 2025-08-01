@@ -11,7 +11,7 @@ The demo files contain examples for any boundary condition one would *technicall
 
 *Demo 3* models free flow through a channel. Boundary conditions are velocity (momentum) inlet on the left, a pressure (zero-gradient) outlet on the right, and no-slip (bounceback) on the top and bottom. Rapid convergence to steady-state flow with zero velocity at wall boundaries emerges as expected.
 
-![demo1.png, depicting a symmetric shockwave](img/shockpoint.png)![demo2.png, depicting lid-driven cavity flow](img/cavityflow.png)
+![demo1.png, depicting a symmetric shockwave](img/shockpoint.png | width=100)![demo2.png, depicting lid-driven cavity flow](img/cavityflow.png | width=100)
 Left: shockwave from pressure shock. Right: lid-driven cavity flow.
 
 ![demo3.png, depicting free channel flow](img/channelflow.png)
