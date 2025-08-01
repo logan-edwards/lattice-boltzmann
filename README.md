@@ -11,6 +11,7 @@ The demo files contain examples for any boundary condition one would *technicall
 
 *Demo 3* models free flow through a channel. Boundary conditions are velocity (momentum) inlet on the left, a pressure (zero-gradient) outlet on the right, and no-slip (bounceback) on the top and bottom. Rapid convergence to steady-state flow with zero velocity at wall boundaries emerges as expected.
 
+<img src="https://github.com/logan-edwards/lattice-boltzmann/tree/main/img/shockpoint.png" width="50" height="100"><img src="https://github.com/logan-edwards/lattice-boltzmann/tree/main/img/cavityflow.png" width="50" height="50">
 ![demo1.png, depicting a symmetric shockwave](img/shockpoint.png | width=100)![demo2.png, depicting lid-driven cavity flow](img/cavityflow.png | width=100)
 Left: shockwave from pressure shock. Right: lid-driven cavity flow.
 
